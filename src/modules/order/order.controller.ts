@@ -17,7 +17,9 @@ import { AuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RoleGuard } from 'src/common/guards/role.guard';
 import { Roles } from 'src/common/decorators/role';
 import { UserRole } from '@prisma/client';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiBearerAuth()
 @Controller('orders')
 @UseGuards(AuthGuard)
 export class OrderController {
