@@ -44,7 +44,7 @@ export function HeroCarousel({ cars, onBuy }: HeroCarouselProps) {
 
     const timer = setInterval(next, 5500);
     return () => clearInterval(timer);
-  }, [next]);
+  }, [featured.length, next]);
 
   if (!featured.length) {
     return null;

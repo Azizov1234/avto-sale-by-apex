@@ -1,4 +1,9 @@
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const DEFAULT_API_URL =
+  typeof window === 'undefined'
+    ? 'http://localhost:3001'
+    : `${window.location.protocol}//${window.location.hostname}:3001`;
+
+const BASE_URL = import.meta.env.VITE_API_URL || DEFAULT_API_URL;
 
 function extractErrorMessage(payload: unknown) {
   if (typeof payload === 'string') {
@@ -35,7 +40,7 @@ export function buildQueryString(params: Record<string, unknown>) {
   return query ? `?${query}` : '';
 }
 
-export async function apiClient<T = any>(
+export async function apiClient<T = unknown>(
   endpoint: string,
   options: RequestInit = {},
 ): Promise<T> {

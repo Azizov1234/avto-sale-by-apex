@@ -1,17 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEmail,
-  IsEnum,
   IsNotEmpty,
   IsOptional,
-  IsPhoneNumber,
   IsString,
-  IsUrl,
-  Matches,
-  Min,
   MinLength,
 } from 'class-validator';
-import { UserRole } from '@prisma/client';
 
 export class UserRegisterDto {
   @ApiProperty({
@@ -23,6 +17,8 @@ export class UserRegisterDto {
   name!: string;
 
   @ApiPropertyOptional({ type: 'string', format: 'binary' })
+  @IsOptional()
+  @IsString()
   avatarUrl!: string;
 
   @ApiProperty({
@@ -53,7 +49,8 @@ export class UserLoginDto {
   @ApiProperty({
     example: '',
   })
-  @IsPhoneNumber('UZ')
+  @IsString()
+  @IsNotEmpty()
   phone!: string;
 
   @ApiProperty({

@@ -1,9 +1,14 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Phone, Lock, Car, ArrowRight } from 'lucide-react';
-import { useAuthStore } from '../../store/useAuthStore';
-import toast from 'react-hot-toast';
+import { ArrowRight, Car, Lock, Phone } from 'lucide-react';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
+import { useAuthStore } from '../../store/useAuthStore';
+import { getHomePath } from '../../lib/routes';
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'Login failed';
+}
 
 export function Login() {
   const [phone, setPhone] = useState('');
@@ -12,9 +17,10 @@ export function Login() {
   const navigate = useNavigate();
   const { login } = useAuthStore();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!phone || !password) {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!phone.trim() || !password.trim()) {
       toast.error('Please enter both phone and password.');
       return;
     }
@@ -22,23 +28,20 @@ export function Login() {
     setIsLoading(true);
 
     try {
-      // Connect to the ready backend using useAuthStore action (we will add it soon)
-      const success = await login({ phone, password });
+      const success = await login({ phone: phone.trim(), password });
       if (success) {
         toast.success('Logged in successfully!');
-        navigate('/');
-      } else {
-        toast.error('Invalid credentials. Please try again.');
+        navigate(getHomePath(useAuthStore.getState().user?.role), { replace: true });
       }
-    } catch (err: any) {
-      toast.error(err.message || 'Login failed');
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error));
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
@@ -62,7 +65,7 @@ export function Login() {
             <input
               type="tel"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(event) => setPhone(event.target.value)}
               className="block w-full pl-10 px-3 py-2.5 bg-white/50 border border-gray-200 rounded-xl text-sm focus:bg-white input-glow transition-all-smooth"
               placeholder="+998901234567"
             />
@@ -72,7 +75,6 @@ export function Login() {
         <div>
           <div className="flex justify-between items-center mb-1">
             <label className="block text-sm font-medium text-gray-700">Password</label>
-            <a href="#" className="text-xs font-medium text-accent hover:text-blue-600 transition-colors">Forgot password?</a>
           </div>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -81,9 +83,9 @@ export function Login() {
             <input
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(event) => setPassword(event.target.value)}
               className="block w-full pl-10 px-3 py-2.5 bg-white/50 border border-gray-200 rounded-xl text-sm focus:bg-white input-glow transition-all-smooth"
-              placeholder="••••••••"
+              placeholder="Enter your password"
             />
           </div>
         </div>
@@ -104,8 +106,11 @@ export function Login() {
       </form>
 
       <p className="mt-8 text-center text-sm text-gray-500">
-        Don't have an account?{' '}
-        <Link to="/register" className="font-semibold text-primary hover:text-gray-700 transition-colors">
+        Do not have an account?{' '}
+        <Link
+          to="/register"
+          className="font-semibold text-primary hover:text-gray-700 transition-colors"
+        >
           Create one now
         </Link>
       </p>

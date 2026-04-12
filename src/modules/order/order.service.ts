@@ -37,7 +37,9 @@ export class OrderService {
       },
     });
 
-    if (!car) throw new NotFoundException('Car not found');
+    if (!car || car.status !== Status.active) {
+      throw new NotFoundException('Car not found');
+    }
 
     const campaignDiscount =
       car.campaigns.length > 0
@@ -133,6 +135,9 @@ export class OrderService {
             paidAt: 'desc',
           },
         },
+      },
+      orderBy: {
+        createdAt: 'desc',
       },
     });
   }

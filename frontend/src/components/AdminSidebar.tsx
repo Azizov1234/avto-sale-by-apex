@@ -6,21 +6,26 @@ import {
 import { useAuthStore } from '../store/useAuthStore';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getAdminBasePath } from '../lib/routes';
 
-const navItems = [
-  { to: '/admin',              icon: LayoutDashboard, label: 'Dashboard',          end: true  },
-  { to: '/admin/cars',         icon: CarFront,         label: 'Manage Cars'                   },
-  { to: '/admin/orders',       icon: ShoppingCart,     label: 'Manage Orders'                 },
-  { to: '/admin/users',        icon: Users,            label: 'Manage Users'                  },
-  { to: '/admin/installments', icon: CreditCard,       label: 'Installment Plans'             },
-  { to: '/admin/campaigns',    icon: Tag,              label: 'Discount Campaigns'            },
-  { to: '/admin/analytics',    icon: BarChart2,         label: 'Analytics'                    },
-  { to: '/admin/logs',         icon: ScrollText,        label: 'Action Logs'                  },
-];
+function getNavItems(basePath: string) {
+  return [
+    { to: basePath,                   icon: LayoutDashboard, label: 'Dashboard', end: true },
+    { to: `${basePath}/cars`,         icon: CarFront,        label: 'Manage Cars' },
+    { to: `${basePath}/orders`,       icon: ShoppingCart,    label: 'Manage Orders' },
+    { to: `${basePath}/users`,        icon: Users,           label: 'Manage Users' },
+    { to: `${basePath}/installments`, icon: CreditCard,      label: 'Installment Plans' },
+    { to: `${basePath}/campaigns`,    icon: Tag,             label: 'Discount Campaigns' },
+    { to: `${basePath}/analytics`,    icon: BarChart2,       label: 'Analytics' },
+    { to: `${basePath}/logs`,         icon: ScrollText,      label: 'Action Logs' },
+  ];
+}
 
 function SidebarContent({ onClose }: { onClose?: () => void }) {
-  const { logout } = useAuthStore();
+  const { logout, user } = useAuthStore();
   const navigate = useNavigate();
+  const basePath = getAdminBasePath(user?.role);
+  const navItems = getNavItems(basePath);
 
   const handleLogout = () => {
     logout();
@@ -36,7 +41,10 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
             <Car size={17} />
           </div>
           <span className="font-extrabold text-base tracking-tight text-gray-900 dark:text-white">
-            Drive<span className="text-primary">.net</span> <span className="text-gray-400 dark:text-gray-500 font-normal text-xs">CRM</span>
+            Drive<span className="text-primary">.net</span>{' '}
+            <span className="text-gray-400 dark:text-gray-500 font-normal text-xs">
+              {user?.role === 'SUPERADMIN' ? 'SUPERADMIN' : 'CRM'}
+            </span>
           </span>
         </NavLink>
         {onClose && (

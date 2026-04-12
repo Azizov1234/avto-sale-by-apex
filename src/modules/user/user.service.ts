@@ -1,12 +1,13 @@
 import {
+  BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { BcryptUtilsService } from 'src/common/utils/bcrypt.service';
-import { JwtUtilsService } from 'src/common/utils/jwt.service';
 import { PrismaService } from 'src/core/prisma/prisma.service';
 import { QuerysDto } from './dto/QuerysDto';
 import { Status, UserRole } from '@prisma/client';
@@ -21,11 +22,20 @@ type AuthUser = {
 export class UserService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly jwt: JwtUtilsService,
     private readonly bcrypt: BcryptUtilsService,
     private readonly adminActionLogService: AdminActionLogService,
   ) {}
-  async createAdmin(payload: CreateUserDto) {
+
+  private serializeUser<T extends Record<string, unknown>>(user: T) {
+    const { password, refreshToken, ...safeUser } = user as T & {
+      password?: string | null;
+      refreshToken?: string | null;
+    };
+
+    return safeUser;
+  }
+
+  async createAdmin(payload: CreateUserDto, currentUser: AuthUser) {
     const existPhone = await this.prisma.user.findFirst({
       where: { phone: payload.phone },
     });
@@ -40,19 +50,22 @@ export class UserService {
     const user = await this.prisma.user.create({
       data: {
         ...payload,
-        role: UserRole.SUPERADMIN,
+        role: UserRole.ADMIN,
         password: hashPass,
       },
     });
+
+    await this.adminActionLogService.createLog({
+      adminId: currentUser.id,
+      action: 'CREATE_USER',
+      entity: 'USER',
+      entityId: user.id,
+    });
+
     return {
       message: 'Successfully created ',
       status: 200,
-      data: user,
-      accessToken: this.jwt.generateToken({
-        id: user.id,
-        phone: user.phone,
-        role: user.role,
-      }),
+      data: this.serializeUser(user),
     };
   }
   async deleteUser(id: number) {
@@ -136,6 +149,17 @@ export class UserService {
         id,
         status: Status.active,
       },
+      select: {
+        id: true,
+        phone: true,
+        name: true,
+        avatarUrl: true,
+        email: true,
+        role: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
     if (!existUser) throw new NotFoundException('User is not found !');
 
@@ -151,6 +175,33 @@ export class UserService {
 
     if (!user) {
       throw new NotFoundException('User is not found!');
+    }
+
+    const isSelfUpdate = currentUser.id === id;
+    const isSuperadmin = currentUser.role === UserRole.SUPERADMIN;
+    const isAdmin =
+      currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.SUPERADMIN;
+    const roleChangeRequested = payload.role !== undefined;
+    const statusChangeRequested = payload.status !== undefined;
+
+    if (!isSelfUpdate && !isAdmin) {
+      throw new ForbiddenException('You do not have permission to update this user');
+    }
+
+    if (user.role === UserRole.SUPERADMIN && !isSelfUpdate && !isSuperadmin) {
+      throw new ForbiddenException('Only superadmin can manage superadmin accounts');
+    }
+
+    if (isSelfUpdate && (roleChangeRequested || statusChangeRequested)) {
+      throw new ForbiddenException('You cannot change your own role or status');
+    }
+
+    if (!isSuperadmin && roleChangeRequested) {
+      throw new ForbiddenException('Only superadmin can change user roles');
+    }
+
+    if (!isSuperadmin && statusChangeRequested) {
+      throw new ForbiddenException('Only superadmin can change user status');
     }
 
     if (payload.phone && payload.phone !== user.phone) {
@@ -172,6 +223,12 @@ export class UserService {
     }
 
     const data: any = { ...payload };
+
+    if (isSelfUpdate) {
+      delete data.role;
+      delete data.status;
+    }
+
     if (payload.password) {
       data.password = await this.bcrypt.generateHashPass(payload.password);
     }
@@ -191,7 +248,7 @@ export class UserService {
     return {
       message: 'User successfully updated',
       status: 200,
-      data: updatedUser,
+      data: this.serializeUser(updatedUser),
     };
   }
 
@@ -200,6 +257,84 @@ export class UserService {
     payload: UpdateUserDto,
     currentUser: AuthUser,
   ) {
+    const targetUser = await this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        role: true,
+      },
+    });
+
+    if (!targetUser) {
+      throw new NotFoundException('User is not found!');
+    }
+
+    if (currentUser.id === id) {
+      throw new BadRequestException('Use the profile update endpoint for your own account');
+    }
+
+    if (currentUser.role === UserRole.ADMIN) {
+      if (targetUser.role !== UserRole.USER) {
+        throw new ForbiddenException('Admin can only manage regular users');
+      }
+
+      if (payload.role !== undefined || payload.status !== undefined) {
+        throw new ForbiddenException(
+          'Only superadmin can change user role or status',
+        );
+      }
+    }
+
     return this.updateUser(id, payload, currentUser);
+  }
+
+  async deleteUserByAdmin(id: number, currentUser: AuthUser) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        role: true,
+        status: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User is not found !');
+    }
+
+    if (currentUser.id === id) {
+      throw new BadRequestException('You cannot delete your own account');
+    }
+
+    if (user.role === UserRole.SUPERADMIN) {
+      throw new ForbiddenException('Superadmin account cannot be deleted');
+    }
+
+    if (currentUser.role === UserRole.ADMIN && user.role !== UserRole.USER) {
+      throw new ForbiddenException('Admin can only delete regular users');
+    }
+
+    if (user.status === Status.deleted) {
+      throw new BadRequestException('User is already deleted');
+    }
+
+    await this.prisma.user.update({
+      where: { id },
+      data: {
+        status: Status.deleted,
+      },
+    });
+
+    await this.adminActionLogService.createLog({
+      adminId: currentUser.id,
+      action: 'DELETE_USER',
+      entity: 'USER',
+      entityId: id,
+    });
+
+    return {
+      status: 200,
+      message: 'User successfully deleted',
+    };
   }
 }

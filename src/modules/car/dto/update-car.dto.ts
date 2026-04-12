@@ -1,6 +1,7 @@
 import { IsOptional, IsString, IsNumber, IsEnum } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { CarCondition, Transmission, Status, EngineType } from '@prisma/client';
+import { Type } from 'class-transformer';
 
 export class UpdateCarDto {
   @ApiPropertyOptional()
@@ -15,16 +16,19 @@ export class UpdateCarDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   price?: number;
 
   @ApiPropertyOptional()
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   year?: number;
 
   @ApiPropertyOptional()
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   mileage?: number;
 
@@ -55,6 +59,7 @@ export class UpdateCarDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   categoryId?: number;
 

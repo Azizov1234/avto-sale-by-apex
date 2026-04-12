@@ -20,8 +20,8 @@ export function ManageOrders() {
     try {
       await updateOrderStatus(id, status);
       toast.success(`${t('status')} ${t('orderStatusUpdated') || 'updated to'} ${t(status.toLowerCase())}`);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update order status.');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update order status.');
     }
   };
 
@@ -30,8 +30,8 @@ export function ManageOrders() {
       try {
         await deleteOrder(id);
         toast.success(t('orderDeleted') || 'Order deleted successfully');
-      } catch (error: any) {
-        toast.error(error.message || 'Failed to delete order.');
+      } catch (error: unknown) {
+        toast.error(error instanceof Error ? error.message : 'Failed to delete order.');
       }
     }
   };

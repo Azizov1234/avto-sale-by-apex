@@ -1,9 +1,9 @@
 import {
   BadRequestException,
-  Body,
   ConflictException,
   Injectable,
 } from '@nestjs/common';
+import { Status } from '@prisma/client';
 import { UserLoginDto, UserRegisterDto } from './dto/create-auth.dto';
 import { JwtUtilsService } from 'src/common/utils/jwt.service';
 import { BcryptUtilsService } from 'src/common/utils/bcrypt.service';
@@ -50,6 +50,7 @@ export class AuthService {
     const existUser = await this.prisma.user.findFirst({
       where: {
         phone: payload.phone,
+        status: Status.active,
       },
     });
     if (!existUser) throw new BadRequestException('Password or Phone is wrong');

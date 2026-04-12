@@ -42,6 +42,7 @@ export class CreateCarDto {
 
   @ApiPropertyOptional({ example: 1 })
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   categoryId?: number;
 

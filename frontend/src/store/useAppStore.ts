@@ -8,6 +8,7 @@ import {
   mapAdminActionLog,
   mapCampaign,
   mapCar,
+  mapCategory,
   mapInstallmentPlan,
   mapOrder,
   mapPayment,
@@ -20,6 +21,7 @@ import type {
   AdminActionLogEntry,
   CampaignFormValues,
   Car,
+  CarCategory,
   CarFormValues,
   DashboardStats,
   DiscountCampaign,
@@ -33,6 +35,8 @@ import type {
   User,
 } from '../types';
 
+type ApiRecord = Record<string, unknown>;
+
 interface OrderFetchOptions {
   mine?: boolean;
 }
@@ -40,7 +44,6 @@ interface OrderFetchOptions {
 interface ReviewFetchOptions {
   mine?: boolean;
   carId?: string;
-  admin?: boolean;
 }
 
 interface PaymentFetchOptions {
@@ -50,6 +53,7 @@ interface PaymentFetchOptions {
 
 interface AppState {
   cars: Car[];
+  categories: CarCategory[];
   orders: Order[];
   reviews: Review[];
   payments: PaymentHistory[];
@@ -59,6 +63,7 @@ interface AppState {
   users: User[];
   stats: DashboardStats | null;
   fetchCars: () => Promise<void>;
+  fetchCategories: () => Promise<void>;
   fetchCarById: (id: string) => Promise<Car | null>;
   addCar: (car: CarFormValues) => Promise<void>;
   updateCar: (id: string, car: Partial<CarFormValues>) => Promise<void>;
@@ -96,10 +101,19 @@ interface AppState {
   updateCampaign: (id: string, payload: CampaignFormValues) => Promise<void>;
   deleteCampaign: (id: string) => Promise<void>;
   fetchActionLogs: () => Promise<void>;
+  deleteActionLog: (id: string) => Promise<void>;
   fetchUsers: () => Promise<void>;
+  createAdmin: (payload: {
+    name: string;
+    email: string;
+    phone: string;
+    password: string;
+  }) => Promise<void>;
   updateUser: (
     id: string,
-    payload: Partial<Pick<User, 'name' | 'email' | 'phone' | 'role'>>,
+    payload: Partial<Pick<User, 'name' | 'email' | 'phone' | 'role'>> & {
+      password?: string;
+    },
   ) => Promise<void>;
   deleteUser: (id: string) => Promise<void>;
   fetchStats: () => Promise<DashboardStats | null>;
@@ -156,8 +170,8 @@ function buildCarFormData(payload: Partial<CarFormValues>) {
     formData.append('imageUrl', payload.image);
   }
 
-  if (payload.categoryId !== undefined) {
-    formData.append('categoryId', String(payload.categoryId));
+  if (payload.categoryId) {
+    formData.append('categoryId', payload.categoryId);
   }
 
   if (payload.engine !== undefined) {
@@ -243,6 +257,7 @@ async function syncCampaignCars(
 
 export const useAppStore = create<AppState>((set, get) => ({
   cars: [],
+  categories: [],
   orders: [],
   reviews: [],
   payments: [],
@@ -253,20 +268,36 @@ export const useAppStore = create<AppState>((set, get) => ({
   stats: null,
 
   async fetchCars() {
-    const response = await apiClient<Record<string, any>>(
+    const response = await apiClient<ApiRecord>(
       `/cars${buildQueryString({ page: 1, limit: DEFAULT_LIMIT })}`,
     );
     const { items } = extractListData(response, mapCar);
     set({ cars: items });
   },
 
+  async fetchCategories() {
+    const response = await apiClient<ApiRecord>(
+      `/categories/all${buildQueryString({ page: 1, limit: DEFAULT_LIMIT })}`,
+    );
+    const rawCategories = Array.isArray(response.data)
+      ? response.data
+      : [];
+    set({
+      categories: rawCategories.map((category) =>
+        mapCategory(category as ApiRecord),
+      ),
+    });
+  },
+
   async fetchCarById(id) {
-    const rawCar = await apiClient<Record<string, any>>(`/cars/${toNumberId(id)}`);
+    const rawCar = await apiClient<ApiRecord>(`/cars/${toNumberId(id)}`);
     const car = mapCar(rawCar);
 
     set((state) => ({
       cars: [car, ...state.cars.filter((existingCar) => existingCar.id !== car.id)],
-      reviews: Array.isArray(rawCar.reviews) ? rawCar.reviews.map(mapReview) : state.reviews,
+      reviews: Array.isArray(rawCar.reviews)
+        ? rawCar.reviews.map((review) => mapReview(review as ApiRecord))
+        : state.reviews,
     }));
 
     return car;
@@ -302,8 +333,8 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   async fetchOrders(options = {}) {
     const endpoint = options.mine ? '/orders/my' : '/orders';
-    const response = await apiClient<Record<string, any>[]>(endpoint);
-    set({ orders: response.map(mapOrder) });
+    const response = await apiClient<ApiRecord[]>(endpoint);
+    set({ orders: response.map((item) => mapOrder(item)) });
   },
 
   async addOrder(payload) {
@@ -356,13 +387,13 @@ export const useAppStore = create<AppState>((set, get) => ({
       })}`;
     }
 
-    const response = await apiClient<Record<string, any>>(endpoint);
+    const response = await apiClient<ApiRecord>(endpoint);
     const { items } = extractListData(response, mapReview);
     set({ reviews: items });
   },
 
   async addReview(payload) {
-    const response = await apiClient<Record<string, any>>('/reviews', {
+    const response = await apiClient<ApiRecord>('/reviews', {
       method: 'POST',
       body: JSON.stringify({
         carId: toNumberId(payload.carId),
@@ -413,7 +444,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       })}`;
     }
 
-    const response = await apiClient<Record<string, any>>(endpoint);
+    const response = await apiClient<ApiRecord>(endpoint);
     const { items } = extractListData(response, mapPayment);
     set({ payments: items });
   },
@@ -431,7 +462,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   async fetchInstallmentPlans() {
-    const response = await apiClient<Record<string, any>>(
+    const response = await apiClient<ApiRecord>(
       `/installment-plans${buildQueryString({ page: 1, limit: DEFAULT_LIMIT })}`,
     );
     const { items } = extractListData(response, mapInstallmentPlan);
@@ -465,7 +496,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   async fetchCampaigns() {
-    const response = await apiClient<Record<string, any>>(
+    const response = await apiClient<ApiRecord>(
       `/campaigns${buildQueryString({ page: 1, limit: DEFAULT_LIMIT })}`,
     );
     const { items } = extractListData(response, mapCampaign);
@@ -473,7 +504,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   async addCampaign(payload) {
-    const createdCampaign = await apiClient<Record<string, any>>('/campaigns', {
+    const createdCampaign = await apiClient<ApiRecord>('/campaigns', {
       method: 'POST',
       body: JSON.stringify({
         name: payload.name,
@@ -517,15 +548,25 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   async fetchActionLogs() {
-    const response = await apiClient<Record<string, any>>(
+    const response = await apiClient<ApiRecord>(
       `/admin-logs${buildQueryString({ page: 1, limit: DEFAULT_LIMIT })}`,
     );
     const { items } = extractListData(response, mapAdminActionLog);
     set({ actionLogs: items });
   },
 
+  async deleteActionLog(id) {
+    await apiClient(`/admin-logs/${toNumberId(id)}`, {
+      method: 'DELETE',
+    });
+
+    set((state) => ({
+      actionLogs: state.actionLogs.filter((log) => log.id !== id),
+    }));
+  },
+
   async fetchUsers() {
-    const response = await apiClient<Record<string, any>>(
+    const response = await apiClient<ApiRecord>(
       `/user/all/with/search${buildQueryString({
         page: 1,
         limit: DEFAULT_LIMIT,
@@ -534,6 +575,21 @@ export const useAppStore = create<AppState>((set, get) => ({
     );
     const { items } = extractListData(response, mapUser);
     set({ users: items });
+  },
+
+  async createAdmin(payload) {
+    const formData = new FormData();
+    formData.append('name', payload.name);
+    formData.append('email', payload.email);
+    formData.append('phone', payload.phone);
+    formData.append('password', payload.password);
+
+    await apiClient('/user/create/admin', {
+      method: 'POST',
+      body: formData,
+    });
+
+    await get().fetchUsers();
   },
 
   async updateUser(id, payload) {
@@ -556,14 +612,14 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   async fetchStats() {
-    const response = await apiClient<Record<string, any>>('/stats');
+    const response = await apiClient<ApiRecord>('/stats');
     const stats = mapStats(response);
     set({ stats });
     return stats;
   },
 
   async recalculateStats() {
-    const response = await apiClient<Record<string, any>>('/stats/recalculate', {
+    const response = await apiClient<ApiRecord>('/stats/recalculate', {
       method: 'POST',
       body: JSON.stringify({ key: 'dashboard' }),
     });

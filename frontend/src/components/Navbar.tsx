@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ThemeToggle } from './ThemeToggle';
 import toast from 'react-hot-toast';
+import { getAdminBasePath } from '../lib/routes';
 
 export function Navbar() {
   const { user, logout } = useAuthStore();
@@ -19,6 +20,8 @@ export function Navbar() {
     toast.success('Logged out successfully.');
     navigate('/login');
   };
+
+  const adminBasePath = getAdminBasePath(user?.role);
 
   const languages = [
     { code: 'uz', label: "O'zbekcha", flag: '🇺🇿' },
@@ -137,11 +140,14 @@ export function Navbar() {
 
                       {['ADMIN', 'SUPERADMIN'].includes(user.role) && (
                         <Link
-                          to="/admin"
+                          to={adminBasePath}
                           onClick={() => setDropdownOpen(false)}
                           className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-primary"
                         >
-                          <ShieldCheck size={15} className="text-primary" /> {t('adminDashboard')}
+                          <ShieldCheck size={15} className="text-primary" />
+                          {user.role === 'SUPERADMIN'
+                            ? 'Superadmin Panel'
+                            : t('adminDashboard')}
                         </Link>
                       )}
 

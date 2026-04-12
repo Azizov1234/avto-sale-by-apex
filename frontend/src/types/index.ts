@@ -14,13 +14,20 @@ export interface PaginationMeta {
   totalPages?: number;
 }
 
+export interface CarCategory {
+  id: string;
+  name: string;
+  status?: EntityStatus;
+  carCount?: number;
+}
+
 export interface User {
   id: string;
   name: string;
   email: string;
   phone?: string;
   role: UserRole;
-  avatarUrl?: string;
+  avatarUrl: string;
   status?: EntityStatus;
   createdAt?: string;
 }
@@ -69,6 +76,7 @@ export interface Car {
   condition: CarCondition;
   discount?: number;
   category?: string;
+  categoryId?: string;
   engine?: string;
   transmission?: string;
   color?: string;
@@ -115,7 +123,7 @@ export interface Review {
   id: string;
   userId: string;
   userName: string;
-  userAvatar?: string;
+  userAvatar: string;
   carId: string;
   carTitle: string;
   rating: number;
@@ -127,7 +135,7 @@ export interface AdminActionLogEntry {
   id: string;
   adminId: string;
   adminName: string;
-  adminAvatarUrl?: string;
+  adminAvatarUrl: string;
   action: string;
   targetType: string;
   targetId: string;
@@ -154,7 +162,7 @@ export interface CarFormValues {
   mileage: number;
   condition: CarCondition;
   image?: string;
-  categoryId?: number;
+  categoryId?: string;
   engine: string;
   transmission: string;
 }

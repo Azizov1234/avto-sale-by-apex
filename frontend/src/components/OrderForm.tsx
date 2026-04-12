@@ -49,15 +49,15 @@ export function OrderForm({ car, onClose }: OrderFormProps) {
       setIsSubmitting(false);
       toast.success('Order placed successfully!');
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       setIsSubmitting(false);
-      toast.error(error.message || 'Failed to place order.');
+      toast.error(error instanceof Error ? error.message : 'Failed to place order.');
     }
   };
 
   return (
-    <div className="flex flex-col h-full bg-white md:bg-transparent">
-      <div className="flex-1 overflow-y-auto p-6 md:p-8">
+    <div className="flex h-full min-h-0 flex-col bg-white md:bg-transparent">
+      <div className="min-h-0 flex-1 overflow-y-auto p-6 md:p-8">
         <div className="flex justify-between items-start mb-6">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">{car.title}</h2>
@@ -119,8 +119,7 @@ export function OrderForm({ car, onClose }: OrderFormProps) {
         </div>
       </div>
 
-      <div className="px-6 md:p-8 bg-white border-t border-gray-100 flex flex-col gap-4">
-        {/* Sticky Summary inside Action Area */}
+      <div className="sticky bottom-0 z-10 shrink-0 border-t border-gray-100 bg-white/95 px-6 py-5 backdrop-blur md:px-8">
         <AnimatePresence mode="wait">
           {selectedPlan && (
             <motion.div 
@@ -158,7 +157,7 @@ export function OrderForm({ car, onClose }: OrderFormProps) {
           )}
         </AnimatePresence>
 
-        <div className="flex gap-4">
+        <div className="mt-4 flex gap-4">
           <button 
             type="button"
             onClick={onClose}

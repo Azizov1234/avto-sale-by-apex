@@ -49,8 +49,8 @@ export function DiscountCampaigns() {
         toast.success('Campaign created!');
       }
       closeModal();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to save campaign.');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to save campaign.');
     }
   };
 
@@ -59,8 +59,8 @@ export function DiscountCampaigns() {
     try {
       await deleteCampaign(id);
       toast.success('Campaign deleted.');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to delete campaign.');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to delete campaign.');
     }
   };
 
@@ -252,7 +252,7 @@ export function DiscountCampaigns() {
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{f.label}</label>
                       <input
                         type="date"
-                        value={(form as any)[f.key]}
+                        value={form[f.key as 'startDate' | 'endDate']}
                         onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
                         className="w-full px-3 py-2.5 bg-white/70 dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none input-glow"
                       />

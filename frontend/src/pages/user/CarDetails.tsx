@@ -295,7 +295,7 @@ export function CarDetails() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 40 }}
               transition={{ type: 'spring', damping: 26 }}
-              className="glass-card w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+              className="glass-card flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden"
             >
               <OrderForm car={car} onClose={() => setShowOrder(false)} />
             </motion.div>

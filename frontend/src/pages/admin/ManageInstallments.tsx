@@ -69,8 +69,8 @@ export function ManageInstallments() {
         toast.success('Plan created.');
       }
       closeModal();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to save plan.');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to save plan.');
     }
   };
 
@@ -80,8 +80,8 @@ export function ManageInstallments() {
     try {
       await deleteInstallmentPlan(id);
       toast.success('Plan deleted.');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to delete plan.');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to delete plan.');
     }
   };
 
@@ -89,8 +89,8 @@ export function ManageInstallments() {
     try {
       await updateInstallmentPlan(plan.id, { isActive: !plan.isActive });
       toast.success(`Plan ${plan.isActive ? 'disabled' : 'enabled'}.`);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update plan status.');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update plan status.');
     }
   };
 

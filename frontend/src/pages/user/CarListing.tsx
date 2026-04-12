@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useLanguageStore } from '../../store/useLanguageStore';
@@ -8,9 +8,7 @@ import { OrderForm } from '../../components/OrderForm';
 import { CarCard } from '../../components/CarCard';
 import { HeroCarousel } from '../../components/HeroCarousel';
 
-const CATEGORIES = ['All', 'SUV', 'Sedan', 'Sports', 'Coupe', 'Wagon'];
-const CONDITIONS  = ['All', 'New', 'Used'];
-const BRANDS = ['All', 'Tesla', 'Porsche', 'Audi', 'BMW', 'Mercedes', 'Ferrari', 'Lamborghini', 'Ford', 'Toyota', 'Lexus', 'Chevrolet', 'Land Rover', 'Aston Martin'];
+const CONDITIONS = ['All', 'New', 'Used', 'Certified'];
 
 export function CarListing() {
   const { cars, fetchCars } = useAppStore();
@@ -48,6 +46,30 @@ export function CarListing() {
     };
   }, [fetchCars]);
 
+  const categories = useMemo(
+    () => [
+      'All',
+      ...new Set(
+        cars
+          .map((car) => car.category)
+          .filter((category): category is string => Boolean(category)),
+      ),
+    ],
+    [cars],
+  );
+
+  const brands = useMemo(
+    () => [
+      'All',
+      ...new Set(
+        cars
+          .map((car) => car.brand)
+          .filter((brand): brand is string => Boolean(brand)),
+      ),
+    ],
+    [cars],
+  );
+
   const filtered = cars.filter(car => {
     const q = search.toLowerCase();
     const matchSearch = !q || car.title.toLowerCase().includes(q) || car.brand.toLowerCase().includes(q);
@@ -72,7 +94,7 @@ export function CarListing() {
 
       {/* Category chips */}
       <div className="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-hide">
-        {CATEGORIES.map(cat => (
+        {categories.map(cat => (
           <button
             key={cat}
             onClick={() => setCategory(cat)}
@@ -139,7 +161,7 @@ export function CarListing() {
                   onChange={e => setBrand(e.target.value)}
                   className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none input-glow"
                 >
-                  {BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
+                  {brands.map(b => <option key={b} value={b}>{b}</option>)}
                 </select>
               </div>
               {/* Condition */}

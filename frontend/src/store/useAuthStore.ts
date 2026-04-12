@@ -3,6 +3,8 @@ import { apiClient } from '../api/client';
 import { mapUser } from '../lib/mappers';
 import type { User } from '../types';
 
+type ApiRecord = Record<string, unknown>;
+
 interface LoginPayload {
   phone: string;
   password: string;
@@ -24,6 +26,15 @@ interface UpdateProfilePayload {
   avatarFile?: File;
 }
 
+interface AuthResponse {
+  accessToken: string;
+  user: ApiRecord;
+}
+
+interface UpdateProfileResponse {
+  data: ApiRecord;
+}
+
 interface AuthState {
   user: User | null;
   login: (credentials: LoginPayload) => Promise<boolean>;
@@ -33,10 +44,18 @@ interface AuthState {
   logout: () => void;
 }
 
+function normalizeStoredUser(rawUser: unknown) {
+  if (!rawUser || typeof rawUser !== 'object') {
+    return null;
+  }
+
+  return mapUser(rawUser as ApiRecord);
+}
+
 function getStoredUser() {
   try {
     const rawUser = localStorage.getItem('auth_user');
-    return rawUser ? (JSON.parse(rawUser) as User) : null;
+    return rawUser ? normalizeStoredUser(JSON.parse(rawUser)) : null;
   } catch {
     return null;
   }
@@ -49,18 +68,17 @@ function persistSession(user: User | null, token?: string) {
 
   if (user) {
     localStorage.setItem('auth_user', JSON.stringify(user));
-  } else {
-    localStorage.removeItem('auth_user');
+    return;
   }
+
+  localStorage.removeItem('auth_user');
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: getStoredUser(),
+
   async login(credentials) {
-    const data = await apiClient<{
-      accessToken: string;
-      user: Record<string, any>;
-    }>('/auth/login', {
+    const data = await apiClient<AuthResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
     });
@@ -70,6 +88,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ user });
     return true;
   },
+
   async register(payload) {
     const formData = new FormData();
     formData.append('name', payload.name);
@@ -81,10 +100,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       formData.append('avatarUrl', payload.avatarFile);
     }
 
-    const data = await apiClient<{
-      accessToken: string;
-      user: Record<string, any>;
-    }>('/auth/register', {
+    const data = await apiClient<AuthResponse>('/auth/register', {
       method: 'POST',
       body: formData,
     });
@@ -94,6 +110,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ user });
     return true;
   },
+
   async updateProfile(payload) {
     const formData = new FormData();
 
@@ -117,7 +134,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       formData.append('avatarUrl', payload.avatarFile);
     }
 
-    const response = await apiClient<{ data: Record<string, any> }>('/user/update', {
+    const response = await apiClient<UpdateProfileResponse>('/user/update', {
       method: 'PATCH',
       body: formData,
     });
@@ -127,10 +144,12 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ user: updatedUser });
     return updatedUser;
   },
+
   setUser(user) {
     persistSession(user);
     set({ user });
   },
+
   logout() {
     localStorage.removeItem('auth_token');
     localStorage.removeItem('auth_user');

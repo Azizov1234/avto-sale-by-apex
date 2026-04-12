@@ -1,8 +1,19 @@
 import { useEffect, useState, type ElementType } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Car, ShoppingCart, Users, Tag, CreditCard, ScrollText } from 'lucide-react';
+import {
+  Search,
+  Car,
+  ShoppingCart,
+  Users,
+  Tag,
+  CreditCard,
+  ScrollText,
+  Trash2,
+} from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useAppStore } from '../../store/useAppStore';
 import type { AdminActionLogEntry } from '../../types';
+import { useAuthStore } from '../../store/useAuthStore';
 
 const TARGET_ICONS: Record<AdminActionLogEntry['targetType'], ElementType> = {
   Car: Car, Order: ShoppingCart, User: Users, Campaign: Tag, Plan: CreditCard,
@@ -24,7 +35,8 @@ function timeAgo(ts: string) {
 }
 
 export function AdminActionLog() {
-  const { actionLogs, fetchActionLogs } = useAppStore();
+  const { actionLogs, fetchActionLogs, deleteActionLog } = useAppStore();
+  const { user } = useAuthStore();
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<string>('All');
 
@@ -40,6 +52,24 @@ export function AdminActionLog() {
     const matchT = filterType === 'All' || log.targetType === filterType;
     return matchQ && matchT;
   });
+
+  const handleDeleteLog = async (id: string) => {
+    if (user?.role !== 'SUPERADMIN') {
+      toast.error('Only superadmin can delete logs.');
+      return;
+    }
+
+    if (!window.confirm('Delete this audit log entry?')) {
+      return;
+    }
+
+    try {
+      await deleteActionLog(id);
+      toast.success('Audit log deleted.');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to delete log.');
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -96,7 +126,7 @@ export function AdminActionLog() {
         ) : (
           <div className="divide-y divide-gray-100 dark:divide-white/10">
             {filtered.map((log, i) => {
-              const TargetIcon = TARGET_ICONS[log.targetType];
+              const TargetIcon = TARGET_ICONS[log.targetType] ?? ScrollText;
               const actionKey = Object.keys(ACTION_COLORS).find((key) => log.action.includes(key));
               const actionColor = (actionKey ? ACTION_COLORS[actionKey] : undefined) ?? 'text-gray-600 bg-gray-100';
               return (
@@ -123,9 +153,21 @@ export function AdminActionLog() {
                     <p className="text-sm text-gray-600 dark:text-gray-400">{log.details}</p>
                   </div>
 
-                  <div className="flex-shrink-0 text-right">
-                    <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">{log.adminName}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{timeAgo(log.timestamp)}</p>
+                  <div className="flex flex-col items-end gap-2 flex-shrink-0 text-right">
+                    <div>
+                      <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">{log.adminName}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{timeAgo(log.timestamp)}</p>
+                    </div>
+                    {user?.role === 'SUPERADMIN' && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteLog(log.id)}
+                        className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                        title="Delete log"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
                   </div>
                 </motion.div>
               );

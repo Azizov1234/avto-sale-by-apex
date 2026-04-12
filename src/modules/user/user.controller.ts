@@ -22,8 +22,8 @@ import {
   ApiBody,
   ApiConsumes,
   ApiOperation,
-  ApiTags,
 } from '@nestjs/swagger';
+import type { Request } from 'express';
 import { CloudinaryService } from 'src/core/cloudinary copy/cloudinary.service';
 import { AuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { RoleGuard } from 'src/common/guards/role.guard';
@@ -54,22 +54,21 @@ export class UserController {
   })
   @UseInterceptors(FileInterceptor('avatarUrl'))
   @UseGuards(AuthGuard, RoleGuard)
-  @Roles(UserRole.SUPERADMIN) // Ikkala rolga ruxsat
+  @Roles(UserRole.SUPERADMIN)
   @ApiOperation({
     summary: ` ${UserRole.SUPERADMIN} `,
   })
   @Post('create/admin')
   async createAdmin(
+    @Req() req: Request,
     @Body() payload: CreateUserDto,
     @UploadedFile() avatarUrl: Express.Multer.File,
   ) {
-    console.log(payload);
-
     if (avatarUrl) {
       payload.avatarUrl = await this.cloudinary.uploadFile(avatarUrl);
     }
 
-    return this.userService.createAdmin(payload);
+    return this.userService.createAdmin(payload, req['user']);
   }
 
   @UseGuards(AuthGuard, RoleGuard)
@@ -127,8 +126,8 @@ export class UserController {
     summary: ` ${UserRole.SUPERADMIN} | ${UserRole.ADMIN}`,
   })
   @Delete('delete/byAdmin/:id')
-  async delete(@Param('id', ParseIntPipe) id: number) {
-    return this.userService.deleteUser(id);
+  async delete(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
+    return this.userService.deleteUserByAdmin(id, req['user']);
   }
 
   @UseGuards(AuthGuard, RoleGuard)
