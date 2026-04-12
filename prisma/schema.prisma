@@ -1,0 +1,275 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+//////////////////////
+// ENUMS 
+//////////////////////
+
+enum UserRole {
+  USER
+  ADMIN
+  SUPERADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  DELIVERED
+  CANCELLED
+}
+
+enum Status {
+  active
+  deleted
+  blocked
+}
+enum CarCondition {
+  NEW        // salondan chiqqan
+  USED       // ishlatilgan
+  CERTIFIED  // sertifikatlangan ishlatilgan mashina
+}
+enum Transmission {
+  AUTOMATIC
+  MANUAL
+}
+enum EngineType {
+  PETROL
+  DIESEL
+  ELECTRIC
+  HYBRID
+}
+enum PlanMonths {
+  ONE
+  THREE
+  SIX
+  NINE
+  TWELVE
+  TWENTY_FOUR
+
+}
+enum OrderType {
+  FULL_PAYMENT
+  INSTALLMENT
+  TRADE_IN
+}
+
+enum PaymentStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+  REFUNDED
+}
+
+
+
+
+
+//////////////////////
+// USER
+//////////////////////
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  phone        String   @unique
+  avatarUrl    String?
+  email        String   @unique
+  status       Status?  @default(active)
+  password     String
+  role         UserRole @default(USER)
+  refreshToken String?
+
+  orders    Order[]
+  reviews   Review[]
+  adminLogs AdminActionLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+//////////////////////
+// CAR CATEGORY
+//////////////////////
+
+model CarCategory {
+  id     Int     @id @default(autoincrement())
+  name   String  @unique
+  status Status? @default(active)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  cars Car[]
+}
+
+//////////////////////
+// CAR
+//////////////////////
+
+model Car {
+  id     Int     @id @default(autoincrement())
+  title  String  @unique
+  status Status? @default(active)
+
+  brand       String
+  price       Float
+  year        Int
+  mileage     Int
+  carConditation CarCondition  
+  description String
+  engine      EngineType
+  transmission  Transmission  
+  imageUrl    String?
+
+  categoryId Int?
+  category   CarCategory? @relation(fields: [categoryId], references: [id])
+
+  installmentPlans InstallmentPlan[]
+  orders           Order[]
+  reviews          Review[]
+  campaigns        DiscountCampaign[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+//////////////////////
+// INSTALLMENT PLAN
+//////////////////////
+
+model InstallmentPlan {
+  id     Int     @id @default(autoincrement())
+  status Status? @default(active)
+
+  carId    Int
+  months   PlanMonths
+  discount Float
+  interest Float
+
+  car Car @relation(fields: [carId], references: [id])
+
+  orders Order[]
+
+  @@unique([carId, months])
+}
+
+//////////////////////
+// ORDER
+//////////////////////
+
+model Order {
+  id Int @id @default(autoincrement())
+
+  userId Int
+  carId  Int
+  planId Int?
+
+  orderType OrderType
+
+  basePrice  Float
+  discount   Float @default(0)
+  interest   Float @default(0)
+  totalPrice Float
+  status     Status  @default(active)
+  orderStatus OrderStatus @default(PENDING)
+  monthlyPay Float?
+
+  paymentStatus PaymentStatus @default(PENDING)
+
+  user User @relation(fields: [userId], references: [id])
+  car  Car  @relation(fields: [carId], references: [id])
+  plan InstallmentPlan? @relation(fields: [planId], references: [id])
+
+  payments PaymentHistory[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([carId])
+  @@index([paymentStatus])
+  @@index([orderStatus])
+}
+
+//////////////////////
+// PAYMENT HISTORY
+//////////////////////
+
+model PaymentHistory {
+  id     Int     @id @default(autoincrement())
+  status Status? @default(active)
+
+  orderId Int
+  amount  Float
+  paidAt  DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id])
+}
+
+//////////////////////
+// REVIEW
+//////////////////////
+
+model Review {
+  id     Int     @id @default(autoincrement())
+  status Status? @default(active)
+
+  userId Int
+  carId  Int
+
+  rating  Int
+  comment String?
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  car  Car  @relation(fields: [carId], references: [id])
+}
+
+//////////////////////
+// STATS CACHE
+//////////////////////
+
+model StatsCache {
+  id Int @id @default(autoincrement())
+
+  key            String   @unique
+  data           Json
+  lastCalculated DateTime @default(now())
+  createdAt      DateTime @default(now())
+}
+
+
+
+model AdminActionLog {
+  id     Int     @id @default(autoincrement())
+  status Status? @default(active)
+
+  adminId   Int
+  action    String
+  entity    String
+  entityId  Int
+  createdAt DateTime @default(now())
+
+  admin User @relation(fields: [adminId], references: [id])
+}
+
+//////////////////////
+// DISCOUNT CAMPAIGN
+//////////////////////
+
+model DiscountCampaign {
+  id     Int     @id @default(autoincrement())
+  status Status? @default(active)
+
+  name        String
+  description String?
+  discount    Float
+  startDate   DateTime
+  endDate     DateTime
+
+  cars Car[]
+}
