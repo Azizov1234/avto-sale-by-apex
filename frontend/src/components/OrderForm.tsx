@@ -117,9 +117,7 @@ export function OrderForm({ car, onClose }: OrderFormProps) {
             </p>
           )}
         </div>
-      </div>
 
-      <div className="sticky bottom-0 z-10 shrink-0 border-t border-gray-100 bg-white/95 px-6 py-5 backdrop-blur md:px-8">
         <AnimatePresence mode="wait">
           {selectedPlan && (
             <motion.div 
@@ -127,7 +125,7 @@ export function OrderForm({ car, onClose }: OrderFormProps) {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex flex-col gap-2"
+              className="mb-2 bg-gray-50 p-4 rounded-2xl border border-gray-100 flex flex-col gap-2"
             >
               <h4 className="font-semibold text-gray-900 mb-1 uppercase text-[10px] tracking-wider">{t('summary')}</h4>
               
@@ -156,8 +154,10 @@ export function OrderForm({ car, onClose }: OrderFormProps) {
             </motion.div>
           )}
         </AnimatePresence>
+      </div>
 
-        <div className="mt-4 flex gap-4">
+      <div className="sticky bottom-0 z-10 shrink-0 border-t border-gray-100 bg-white/95 px-6 py-5 backdrop-blur md:px-8">
+        <div className="flex gap-4">
           <button 
             type="button"
             onClick={onClose}

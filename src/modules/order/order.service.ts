@@ -23,8 +23,10 @@ export class OrderService {
   ) {}
 
   async create(dto: CreateOrderDto, userId: number) {
+    const carId = Number(dto.carId);
+    if (isNaN(carId)) throw new BadRequestException('carId is invalid');
     const car = await this.prisma.car.findUnique({
-      where: { id: dto.carId },
+      where: { id: carId },
       include: {
         installmentPlans: true,
         campaigns: {
@@ -42,7 +44,7 @@ export class OrderService {
     }
 
     const campaignDiscount =
-      car.campaigns.length > 0
+      car.campaigns?.length > 0
         ? Math.max(...car.campaigns.map((campaign) => campaign.discount))
         : 0;
 
@@ -61,7 +63,7 @@ export class OrderService {
       }
 
       const plan = car.installmentPlans.find(
-        (p) => p.id === dto.planId && p.status === 'active',
+        (p) => p.id === Number(dto.planId) && p.status === 'active',
       );
 
       if (!plan) {
@@ -82,7 +84,7 @@ export class OrderService {
       data: {
         userId,
         carId: car.id,
-        planId: dto.orderType === OrderType.INSTALLMENT ? dto.planId : null,
+        planId: dto.orderType === OrderType.INSTALLMENT ? Number(dto.planId) : null,
         orderType: dto.orderType,
 
         basePrice: car.price,
