@@ -64,6 +64,9 @@ interface AppState {
   stats: DashboardStats | null;
   fetchCars: () => Promise<void>;
   fetchCategories: () => Promise<void>;
+  addCategory: (name: string) => Promise<void>;
+  updateCategory: (id: string, name: string) => Promise<void>;
+  deleteCategory: (id: string) => Promise<void>;
   fetchCarById: (id: string) => Promise<Car | null>;
   addCar: (car: CarFormValues) => Promise<void>;
   updateCar: (id: string, car: Partial<CarFormValues>) => Promise<void>;
@@ -283,7 +286,11 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   async fetchCategories() {
     const response = await apiClient<ApiRecord>(
-      `/categories/all${buildQueryString({ page: 1, limit: DEFAULT_LIMIT })}`,
+      `/categories/all${buildQueryString({
+        page: 1,
+        limit: DEFAULT_LIMIT,
+        status: 'active',
+      })}`,
     );
     const rawCategories = Array.isArray(response.data)
       ? response.data
@@ -293,6 +300,36 @@ export const useAppStore = create<AppState>((set, get) => ({
         mapCategory(category as ApiRecord),
       ),
     });
+  },
+
+  async addCategory(name) {
+    await apiClient('/categories', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: name.trim(),
+      }),
+    });
+
+    await get().fetchCategories();
+  },
+
+  async updateCategory(id, name) {
+    await apiClient(`/categories/update/${toNumberId(id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        name: name.trim(),
+      }),
+    });
+
+    await get().fetchCategories();
+  },
+
+  async deleteCategory(id) {
+    await apiClient(`/categories/delete/${toNumberId(id)}`, {
+      method: 'DELETE',
+    });
+
+    await get().fetchCategories();
   },
 
   async fetchCarById(id) {

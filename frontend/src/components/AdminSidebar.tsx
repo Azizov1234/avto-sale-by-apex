@@ -13,6 +13,7 @@ function getNavItems(basePath: string, role?: UserRole) {
   const items = [
     { to: basePath,                   icon: LayoutDashboard, label: 'Dashboard', end: true },
     { to: `${basePath}/cars`,         icon: CarFront,        label: 'Manage Cars' },
+    { to: `${basePath}/categories`,   icon: Car,             label: 'Car Categories' },
     { to: `${basePath}/orders`,       icon: ShoppingCart,    label: 'Manage Orders' },
     { to: `${basePath}/installments`, icon: CreditCard,      label: 'Installment Plans' },
     { to: `${basePath}/campaigns`,    icon: Tag,             label: 'Discount Campaigns' },

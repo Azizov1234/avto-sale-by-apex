@@ -10,6 +10,7 @@ import { CarDetails }     from './pages/user/CarDetails';
 import { UserDashboard }  from './pages/user/UserDashboard';
 import { Dashboard }           from './pages/admin/Dashboard';
 import { ManageCars }          from './pages/admin/ManageCars';
+import { ManageCategories }    from './pages/admin/ManageCategories';
 import { ManageOrders }        from './pages/admin/ManageOrders';
 import { ManageUsers }         from './pages/admin/ManageUsers';
 import { ManageInstallments }  from './pages/admin/ManageInstallments';
@@ -91,6 +92,7 @@ export default function App() {
       >
         <Route index                element={<Dashboard />} />
         <Route path="cars"          element={<ManageCars />} />
+        <Route path="categories"    element={<ManageCategories />} />
         <Route path="orders"        element={<ManageOrders />} />
         <Route
           path="users"
@@ -130,6 +132,7 @@ export default function App() {
       >
         <Route index                element={<Dashboard />} />
         <Route path="cars"          element={<ManageCars />} />
+        <Route path="categories"    element={<ManageCategories />} />
         <Route path="orders"        element={<ManageOrders />} />
         <Route path="users"         element={<ManageUsers />} />
         <Route path="installments"  element={<ManageInstallments />} />

@@ -28,6 +28,16 @@ function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : 'Failed to save car.';
 }
 
+function parseNumberWithoutLeadingZeros(value: string) {
+  if (!value) {
+    return 0;
+  }
+
+  const normalizedValue = value.replace(/^0+(?=\d)/, '');
+  const parsed = Number(normalizedValue);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 export function ManageCars() {
   const {
     addCar,
@@ -368,7 +378,9 @@ export function ManageCars() {
                     type="number"
                     min={0}
                     value={form.price}
-                    onChange={(event) => updateForm('price', Number(event.target.value))}
+                    onChange={(event) =>
+                      updateForm('price', parseNumberWithoutLeadingZeros(event.target.value))
+                    }
                     className="w-full px-3 py-2.5 bg-white/70 dark:bg-white/10 border border-gray-200 dark:border-white/10 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none input-glow"
                   />
                 </div>
@@ -381,7 +393,9 @@ export function ManageCars() {
                     type="number"
                     min={0}
                     value={form.year}
-                    onChange={(event) => updateForm('year', Number(event.target.value))}
+                    onChange={(event) =>
+                      updateForm('year', parseNumberWithoutLeadingZeros(event.target.value))
+                    }
                     className="w-full px-3 py-2.5 bg-white/70 dark:bg-white/10 border border-gray-200 dark:border-white/10 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none input-glow"
                   />
                 </div>
@@ -394,7 +408,9 @@ export function ManageCars() {
                     type="number"
                     min={0}
                     value={form.mileage}
-                    onChange={(event) => updateForm('mileage', Number(event.target.value))}
+                    onChange={(event) =>
+                      updateForm('mileage', parseNumberWithoutLeadingZeros(event.target.value))
+                    }
                     className="w-full px-3 py-2.5 bg-white/70 dark:bg-white/10 border border-gray-200 dark:border-white/10 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none input-glow"
                   />
                 </div>
