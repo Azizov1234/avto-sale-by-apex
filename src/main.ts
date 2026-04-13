@@ -8,7 +8,6 @@ async function bootstrap() {
 
   app.enableCors({ origin: '*' });
 
-  // 1. Global Validation Pipe sozlamalari
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
@@ -36,6 +35,7 @@ async function bootstrap() {
   const PORT = process.env.PORT || 3000;
   await app.listen(PORT);
 
-  console.log(`📝 Swagger hujjatlari: http://localhost:${PORT}/swagger`);
+  console.log(`Swagger hujjatlari: http://localhost:${PORT}/swagger`);
 }
+
 bootstrap();

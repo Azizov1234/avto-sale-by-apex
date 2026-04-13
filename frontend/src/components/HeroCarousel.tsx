@@ -11,7 +11,7 @@ interface HeroCarouselProps {
 const variants = {
   enter: (dir: number) => ({ x: dir > 0 ? '100%' : '-100%', opacity: 0.3 }),
   center: { x: 0, opacity: 1 },
-  exit:  (dir: number) => ({ x: dir > 0 ? '-100%' : '100%', opacity: 0.3 }),
+  exit: (dir: number) => ({ x: dir > 0 ? '-100%' : '100%', opacity: 0.3 }),
 };
 
 export function HeroCarousel({ cars, onBuy }: HeroCarouselProps) {
@@ -23,18 +23,19 @@ export function HeroCarousel({ cars, onBuy }: HeroCarouselProps) {
     if (!featured.length) {
       return;
     }
+
     setDirection(1);
-    setCurrent(c => (c + 1) % featured.length);
+    setCurrent((value) => (value + 1) % featured.length);
   }, [featured.length]);
 
   const prev = () => {
     setDirection(-1);
-    setCurrent(c => (c - 1 + featured.length) % featured.length);
+    setCurrent((value) => (value - 1 + featured.length) % featured.length);
   };
 
-  const goTo = (i: number) => {
-    setDirection(i > current ? 1 : -1);
-    setCurrent(i);
+  const goTo = (index: number) => {
+    setDirection(index > current ? 1 : -1);
+    setCurrent(index);
   };
 
   useEffect(() => {
@@ -53,7 +54,7 @@ export function HeroCarousel({ cars, onBuy }: HeroCarouselProps) {
   const car = featured[current];
 
   return (
-    <div className="relative w-full h-[480px] md:h-[580px] rounded-3xl overflow-hidden mb-12 shadow-2xl">
+    <div className="relative mb-12 h-[480px] w-full overflow-hidden rounded-3xl shadow-2xl md:h-[580px]">
       <AnimatePresence initial={false} custom={direction} mode="popLayout">
         <motion.div
           key={current}
@@ -65,18 +66,14 @@ export function HeroCarousel({ cars, onBuy }: HeroCarouselProps) {
           transition={{ type: 'tween', duration: 0.55, ease: [0.76, 0, 0.24, 1] }}
           className="absolute inset-0"
         >
-          {/* Background image */}
           <img
             src={car.image}
             alt={car.title}
-            className="w-full h-full object-cover"
+            className="h-full w-full object-cover"
           />
-          {/* Gradient overlay */}
-          <div className="absolute inset-0 hero-overlay" />
-          {/* Subtle bottom fade */}
+          <div className="hero-overlay absolute inset-0" />
           <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/60 to-transparent" />
 
-          {/* Content */}
           <div className="absolute inset-0 flex items-center px-8 md:px-16">
             <motion.div
               initial={{ opacity: 0, x: -40 }}
@@ -84,26 +81,31 @@ export function HeroCarousel({ cars, onBuy }: HeroCarouselProps) {
               transition={{ delay: 0.2, duration: 0.55, ease: 'easeOut' }}
               className="max-w-xl"
             >
-              <div className="flex items-center gap-2 mb-3">
+              <div className="mb-3 flex items-center gap-2">
                 <span className="text-xs font-bold uppercase tracking-[0.2em] text-amber-400">
-                  {car.condition === 'New' ? '⚡ Just Arrived' : '✨ Featured'}
+                  {car.condition === 'New' ? 'New Arrival' : 'Featured'}
                 </span>
                 {car.discount && (
-                  <span className="bg-amber-400 text-gray-900 text-xs font-bold px-2 py-0.5 rounded-md">
+                  <span className="rounded-md bg-amber-400 px-2 py-0.5 text-xs font-bold text-gray-900">
                     {car.discount}% OFF
                   </span>
                 )}
               </div>
 
-              <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-2 leading-tight drop-shadow-lg">
+              <h2 className="mb-2 text-4xl font-extrabold leading-tight text-white drop-shadow-lg md:text-5xl">
                 {car.title}
               </h2>
-              <p className="text-white/70 mb-2 text-sm md:text-base">{car.brand} · {car.year} · {car.condition}</p>
-              <p className="text-white/60 text-sm mb-6 line-clamp-2 max-w-sm">{car.description}</p>
+              <p className="mb-2 text-sm text-white/70 md:text-base">
+                {car.brand} | {car.year} | {car.condition}
+              </p>
+              <p className="mb-6 max-w-sm text-sm text-white/60 line-clamp-2">
+                {car.description}
+              </p>
 
-              <div className="flex items-center gap-4 mb-8">
-                <span className="text-3xl md:text-4xl font-bold text-white drop-shadow">
-                  ${car.discount
+              <div className="mb-8 flex items-center gap-4">
+                <span className="text-3xl font-bold text-white drop-shadow md:text-4xl">
+                  $
+                  {car.discount
                     ? Math.round(car.price * (1 - car.discount / 100)).toLocaleString()
                     : car.price.toLocaleString()}
                 </span>
@@ -114,53 +116,47 @@ export function HeroCarousel({ cars, onBuy }: HeroCarouselProps) {
 
               <button
                 onClick={() => onBuy(car)}
-                className="group inline-flex items-center gap-2 px-7 py-3.5 bg-primary text-white rounded-2xl font-bold text-base
-                  hover:bg-indigo-500 transition-all hover:scale-105 shadow-lg shadow-primary/40"
+                className="group inline-flex items-center gap-2 rounded-2xl bg-primary px-7 py-3.5 text-base font-bold text-white shadow-lg shadow-primary/40 transition-all hover:scale-105 hover:bg-indigo-500"
               >
                 View & Buy
-                <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                <ChevronRight size={20} className="transition-transform group-hover:translate-x-1" />
               </button>
             </motion.div>
           </div>
         </motion.div>
       </AnimatePresence>
 
-      {/* Prev / Next arrows */}
       <button
         onClick={prev}
-        className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-white/15 hover:bg-white/30
-          backdrop-blur-md text-white p-3 rounded-full transition-all hover:scale-110"
+        className="absolute left-4 top-1/2 z-20 -translate-y-1/2 rounded-full bg-white/15 p-3 text-white backdrop-blur-md transition-all hover:scale-110 hover:bg-white/30"
         aria-label="Previous"
       >
         <ChevronLeft size={20} />
       </button>
       <button
         onClick={next}
-        className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-white/15 hover:bg-white/30
-          backdrop-blur-md text-white p-3 rounded-full transition-all hover:scale-110"
+        className="absolute right-4 top-1/2 z-20 -translate-y-1/2 rounded-full bg-white/15 p-3 text-white backdrop-blur-md transition-all hover:scale-110 hover:bg-white/30"
         aria-label="Next"
       >
         <ChevronRight size={20} />
       </button>
 
-      {/* Dot indicators */}
-      <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 flex gap-2 items-center">
-        {featured.map((_, i) => (
+      <div className="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2">
+        {featured.map((_, index) => (
           <button
-            key={i}
-            onClick={() => goTo(i)}
-            aria-label={`Slide ${i + 1}`}
+            key={index}
+            onClick={() => goTo(index)}
+            aria-label={`Slide ${index + 1}`}
             className={`rounded-full transition-all duration-300 ${
-              i === current
-                ? 'bg-white w-7 h-2.5'
-                : 'bg-white/40 hover:bg-white/60 w-2.5 h-2.5'
+              index === current
+                ? 'h-2.5 w-7 bg-white'
+                : 'h-2.5 w-2.5 bg-white/40 hover:bg-white/60'
             }`}
           />
         ))}
       </div>
 
-      {/* Slide counter */}
-      <div className="absolute top-5 right-5 z-20 bg-black/40 backdrop-blur-sm text-white text-xs font-medium px-3 py-1.5 rounded-full">
+      <div className="absolute right-5 top-5 z-20 rounded-full bg-black/40 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm">
         {current + 1} / {featured.length}
       </div>
     </div>

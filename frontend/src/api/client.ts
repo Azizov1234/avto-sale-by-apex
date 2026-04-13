@@ -13,6 +13,10 @@ function extractErrorMessage(payload: unknown) {
   if (payload && typeof payload === 'object') {
     const record = payload as Record<string, unknown>;
 
+    if (typeof record.error === 'string') {
+      return record.error;
+    }
+
     if (typeof record.message === 'string') {
       return record.message;
     }
@@ -56,10 +60,16 @@ export async function apiClient<T = unknown>(
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  const response = await fetch(`${BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${BASE_URL}${endpoint}`, {
+      ...options,
+      headers,
+    });
+  } catch {
+    throw new Error("Server bilan bog'lanib bo'lmadi. API manzilini tekshiring.");
+  }
 
   const text = await response.text();
   let payload: unknown = null;
@@ -73,7 +83,7 @@ export async function apiClient<T = unknown>(
   }
 
   if (!response.ok) {
-    throw new Error(extractErrorMessage(payload));
+    throw new Error(extractErrorMessage(payload) || response.statusText);
   }
 
   return payload as T;

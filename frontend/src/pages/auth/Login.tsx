@@ -51,13 +51,13 @@ export function Login() {
         <div className="bg-primary text-primary-foreground p-3 rounded-xl mb-4 shadow-md">
           <Car size={28} />
         </div>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Welcome Back</h1>
-        <p className="text-gray-500 text-sm mt-2">Sign in to your account to continue</p>
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Welcome Back</h1>
+        <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">Sign in to your account to continue</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number</label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Phone size={18} className="text-gray-400" />
@@ -66,7 +66,7 @@ export function Login() {
               type="tel"
               value={phone}
               onChange={(event) => setPhone(event.target.value)}
-              className="block w-full pl-10 px-3 py-2.5 bg-white/50 border border-gray-200 rounded-xl text-sm focus:bg-white input-glow transition-all-smooth"
+              className="input-field input-glow block w-full pl-10 px-3 py-2.5"
               placeholder="+998901234567"
             />
           </div>
@@ -74,7 +74,7 @@ export function Login() {
 
         <div>
           <div className="flex justify-between items-center mb-1">
-            <label className="block text-sm font-medium text-gray-700">Password</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
           </div>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -84,7 +84,7 @@ export function Login() {
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="block w-full pl-10 px-3 py-2.5 bg-white/50 border border-gray-200 rounded-xl text-sm focus:bg-white input-glow transition-all-smooth"
+              className="input-field input-glow block w-full pl-10 px-3 py-2.5"
               placeholder="Enter your password"
             />
           </div>
@@ -105,11 +105,11 @@ export function Login() {
         </button>
       </form>
 
-      <p className="mt-8 text-center text-sm text-gray-500">
+      <p className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
         Do not have an account?{' '}
         <Link
           to="/register"
-          className="font-semibold text-primary hover:text-gray-700 transition-colors"
+          className="font-semibold text-primary hover:text-gray-700 dark:hover:text-white transition-colors"
         >
           Create one now
         </Link>

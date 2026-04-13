@@ -87,8 +87,8 @@ export function Register() {
         <div className="bg-primary text-primary-foreground p-3 rounded-xl mb-4 shadow-md">
           <Car size={28} />
         </div>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Create Account</h1>
-        <p className="text-gray-500 text-sm mt-2">Join Drive.net today</p>
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Create Account</h1>
+        <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">Join Drive.net today</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -113,13 +113,13 @@ export function Register() {
             className="hidden"
             onChange={(event) => setAvatarFile(event.target.files?.[0] ?? null)}
           />
-          <p className="mt-3 text-xs text-gray-500 text-center">
+          <p className="mt-3 text-xs text-gray-500 dark:text-gray-400 text-center">
             Avatar is optional. If you skip it, a default profile avatar will be used.
           </p>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <UserIcon size={18} className="text-gray-400" />
@@ -128,14 +128,14 @@ export function Register() {
               type="text"
               value={name}
               onChange={(event) => setName(event.target.value)}
-              className="block w-full pl-10 px-3 py-2.5 bg-white/50 border border-gray-200 rounded-xl text-sm focus:bg-white input-glow transition-all-smooth"
+              className="input-field input-glow block w-full pl-10 px-3 py-2.5"
               placeholder="John Doe"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number</label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Phone size={18} className="text-gray-400" />
@@ -144,14 +144,14 @@ export function Register() {
               type="tel"
               value={phone}
               onChange={(event) => setPhone(event.target.value)}
-              className="block w-full pl-10 px-3 py-2.5 bg-white/50 border border-gray-200 rounded-xl text-sm focus:bg-white input-glow transition-all-smooth"
+              className="input-field input-glow block w-full pl-10 px-3 py-2.5"
               placeholder="+998901234567"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email Address</label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Mail size={18} className="text-gray-400" />
@@ -160,14 +160,14 @@ export function Register() {
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className="block w-full pl-10 px-3 py-2.5 bg-white/50 border border-gray-200 rounded-xl text-sm focus:bg-white input-glow transition-all-smooth"
+              className="input-field input-glow block w-full pl-10 px-3 py-2.5"
               placeholder="name@example.com"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Lock size={18} className="text-gray-400" />
@@ -176,7 +176,7 @@ export function Register() {
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="block w-full pl-10 px-3 py-2.5 bg-white/50 border border-gray-200 rounded-xl text-sm focus:bg-white input-glow transition-all-smooth"
+              className="input-field input-glow block w-full pl-10 px-3 py-2.5"
               placeholder="Enter your password"
             />
           </div>
@@ -197,11 +197,11 @@ export function Register() {
         </button>
       </form>
 
-      <p className="mt-8 text-center text-sm text-gray-500">
+      <p className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
         Already have an account?{' '}
         <Link
           to="/login"
-          className="font-semibold text-primary hover:text-gray-700 transition-colors"
+          className="font-semibold text-primary hover:text-gray-700 dark:hover:text-white transition-colors"
         >
           Sign In
         </Link>

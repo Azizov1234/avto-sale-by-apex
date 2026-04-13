@@ -92,7 +92,7 @@ const translations: Record<Language, Record<string, string>> = {
     pending: 'В ожидании',
     confirmed: 'Подтвержден',
     delivered: 'Доставлен',
-    orderId: 'ID Заказа',
+    orderId: 'ID заказа',
     customer: 'Клиент',
     vehicle: 'Автомобиль',
     date: 'Дата',
