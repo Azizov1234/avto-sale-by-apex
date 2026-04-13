@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -17,8 +18,12 @@ export class InstallmentPlanService {
       where: { id: payload.carId },
     });
 
-    if (!car || car.status !== 'active') {
-      throw new ConflictException('Car not found or inactive');
+    if (!car) {
+      throw new NotFoundException('Car not found');
+    }
+
+    if (car.status !== 'active') {
+      throw new BadRequestException('Car is not active');
     }
 
     const checkMonth = await this.prisma.installmentPlan.findFirst({

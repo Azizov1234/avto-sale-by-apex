@@ -117,7 +117,7 @@ export class OrderService {
       );
 
       if (!plan) {
-        throw new BadRequestException('Installment plan not found');
+        throw new NotFoundException('Installment plan not found');
       }
 
       discount = Math.min(campaignDiscount + plan.discount, 100);

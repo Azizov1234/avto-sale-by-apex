@@ -20,12 +20,14 @@ export class AuthService {
     const existPhone = await this.prisma.user.findFirst({
       where: { phone: payload.phone },
     });
-    if (existPhone) throw new ConflictException('Phone number is already used');
+    if (existPhone)
+      throw new ConflictException('User with this phone already exists');
 
     const existEmail = await this.prisma.user.findFirst({
       where: { email: payload.email },
     });
-    if (existEmail) throw new ConflictException('Email is already used');
+    if (existEmail)
+      throw new ConflictException('User with this email already exists');
 
     const hashPass = await this.bcrypt.generateHashPass(payload.password);
     const user = await this.prisma.user.create({

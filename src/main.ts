@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -12,8 +13,10 @@ async function bootstrap() {
     new ValidationPipe({
       transform: true,
       whitelist: true,
+      stopAtFirstError: true,
     }),
   );
+  app.useGlobalFilters(new GlobalExceptionFilter());
 
   const config = new DocumentBuilder()
     .setTitle('Avto Sale API')

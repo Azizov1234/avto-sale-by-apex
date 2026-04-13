@@ -5,17 +5,40 @@ const DEFAULT_API_URL =
 
 const BASE_URL = import.meta.env.VITE_API_URL || DEFAULT_API_URL;
 
-function extractErrorMessage(payload: unknown) {
+const GENERIC_ERROR_PATTERNS = [
+  'bad request',
+  'bad request exception',
+  'unauthorized',
+  'forbidden',
+  'internal server error',
+  'not found',
+  'invalid token',
+  'token is missing',
+  'token topilmadi',
+];
+
+const STATUS_FALLBACK_MESSAGES: Record<number, string> = {
+  400: "So'rovda xatolik bor. Ma'lumotlarni tekshirib qayta urinib ko'ring.",
+  401: "Sessiya muddati tugagan. Qayta tizimga kiring.",
+  403: "Bu amalni bajarishga sizda ruxsat yo'q.",
+  404: "So'ralgan ma'lumot topilmadi.",
+  409: "Bu ma'lumot allaqachon mavjud yoki ziddiyat bor.",
+  422: "Yuborilgan ma'lumotlar noto'g'ri formatda.",
+  500: "Serverda xatolik yuz berdi. Birozdan keyin yana urinib ko'ring.",
+};
+
+function isGenericErrorMessage(message: string) {
+  const normalized = message.trim().toLowerCase();
+  return GENERIC_ERROR_PATTERNS.some((pattern) => normalized.includes(pattern));
+}
+
+function readPayloadMessage(payload: unknown) {
   if (typeof payload === 'string') {
     return payload;
   }
 
   if (payload && typeof payload === 'object') {
     const record = payload as Record<string, unknown>;
-
-    if (typeof record.error === 'string') {
-      return record.error;
-    }
 
     if (typeof record.message === 'string') {
       return record.message;
@@ -24,9 +47,45 @@ function extractErrorMessage(payload: unknown) {
     if (Array.isArray(record.message) && record.message.length > 0) {
       return String(record.message[0]);
     }
+
+    if (typeof record.error === 'string') {
+      return record.error;
+    }
   }
 
-  return 'Something went wrong';
+  return undefined;
+}
+
+function extractErrorMessage(payload: unknown, statusCode: number) {
+  const message = readPayloadMessage(payload);
+
+  if (message && !isGenericErrorMessage(message)) {
+    return message;
+  }
+
+  if (statusCode in STATUS_FALLBACK_MESSAGES) {
+    return STATUS_FALLBACK_MESSAGES[statusCode];
+  }
+
+  return message || "Kutilmagan xatolik yuz berdi.";
+}
+
+function isAuthEndpoint(endpoint: string) {
+  return endpoint.startsWith('/auth/');
+}
+
+function redirectToLogin() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  localStorage.removeItem('auth_token');
+  localStorage.removeItem('auth_user');
+
+  if (window.location.pathname !== '/login') {
+    const nextPath = `${window.location.pathname}${window.location.search}`;
+    window.location.replace(`/login?next=${encodeURIComponent(nextPath)}`);
+  }
 }
 
 export function buildQueryString(params: Record<string, unknown>) {
@@ -83,7 +142,14 @@ export async function apiClient<T = unknown>(
   }
 
   if (!response.ok) {
-    throw new Error(extractErrorMessage(payload) || response.statusText);
+    const errorMessage = extractErrorMessage(payload, response.status);
+
+    if (response.status === 401 && !isAuthEndpoint(endpoint)) {
+      redirectToLogin();
+      throw new Error("Sessiya muddati tugagan. Qayta tizimga kiring.");
+    }
+
+    throw new Error(errorMessage || response.statusText);
   }
 
   return payload as T;

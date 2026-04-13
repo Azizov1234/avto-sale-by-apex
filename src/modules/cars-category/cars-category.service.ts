@@ -1,5 +1,5 @@
 import {
-  BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -21,7 +21,7 @@ export class CarsCategoryService {
     });
 
     if (exist) {
-      throw new BadRequestException('Category already exists');
+      throw new ConflictException('Category already exists');
     }
 
     const category = await this.prisma.carCategory.create({
@@ -55,7 +55,7 @@ export class CarsCategoryService {
     });
 
     if (hasCars > 0) {
-      throw new BadRequestException('Cannot delete category with active cars');
+      throw new ConflictException('Cannot delete category with active cars');
     }
 
     await this.prisma.carCategory.update({
@@ -92,7 +92,7 @@ export class CarsCategoryService {
       });
 
       if (exist) {
-        throw new BadRequestException('Category already exists');
+        throw new ConflictException('Category already exists');
       }
     }
 

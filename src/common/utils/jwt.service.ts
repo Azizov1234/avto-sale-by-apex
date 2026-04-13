@@ -22,8 +22,8 @@ export class JwtUtilsService {
   verifyToken(token: string) {
     try {
       return this.jwt.verify(token);
-    } catch (error) {
-      throw new UnauthorizedException('Yaroqsiz yoki muddati o‘tgan token');
+    } catch {
+      throw new UnauthorizedException("Yaroqsiz yoki muddati o'tgan token");
     }
   }
 }

@@ -39,12 +39,14 @@ export class UserService {
     const existPhone = await this.prisma.user.findFirst({
       where: { phone: payload.phone },
     });
-    if (existPhone) throw new ConflictException('Phone number is already used');
+    if (existPhone)
+      throw new ConflictException('User with this phone already exists');
 
     const existEmail = await this.prisma.user.findFirst({
       where: { email: payload.email },
     });
-    if (existEmail) throw new ConflictException('Email is already used');
+    if (existEmail)
+      throw new ConflictException('User with this email already exists');
 
     const hashPass = await this.bcrypt.generateHashPass(payload.password);
     const user = await this.prisma.user.create({
@@ -210,7 +212,7 @@ export class UserService {
       });
       if (existPhone)
         throw new ConflictException(
-          'Phone number is already used by another user',
+          'Another user already uses this phone number',
         );
     }
 
@@ -219,7 +221,7 @@ export class UserService {
         where: { email: payload.email },
       });
       if (existEmail)
-        throw new ConflictException('Email is already used by another user');
+        throw new ConflictException('Another user already uses this email');
     }
 
     const data: any = { ...payload };
