@@ -14,6 +14,7 @@ const BLANK: CarFormValues = {
   mileage: 0,
   condition: 'New',
   image: '',
+  imageFile: null,
   engine: 'Petrol',
   transmission: 'Automatic',
   categoryId: '',
@@ -72,6 +73,7 @@ export function ManageCars() {
       mileage: car.mileage,
       condition: car.condition,
       image: car.image,
+      imageFile: null,
       engine: car.engine || 'Petrol',
       transmission: car.transmission || 'Automatic',
       categoryId: car.categoryId || '',
@@ -95,6 +97,11 @@ export function ManageCars() {
 
     if (form.price <= 0) {
       toast.error('Price must be greater than 0.');
+      return;
+    }
+
+    if (modal === 'add' && !form.imageFile) {
+      toast.error('Car image file is required.');
       return;
     }
 
@@ -127,6 +134,23 @@ export function ManageCars() {
 
   const updateForm = <K extends keyof CarFormValues>(key: K, value: CarFormValues[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleImageFileChange = (file: File | null) => {
+    if (!file) {
+      setForm((prev) => ({ ...prev, imageFile: null }));
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setForm((prev) => ({
+        ...prev,
+        imageFile: file,
+        image: typeof reader.result === 'string' ? reader.result : prev.image,
+      }));
+    };
+    reader.readAsDataURL(file);
   };
 
   return (
@@ -413,15 +437,19 @@ export function ManageCars() {
               <div className="mt-4 space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Image URL
+                    Vehicle Photo
                   </label>
                   <input
-                    type="text"
-                    value={form.image || ''}
-                    onChange={(event) => updateForm('image', event.target.value)}
-                    placeholder="Optional image URL"
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) => handleImageFileChange(event.target.files?.[0] ?? null)}
                     className="w-full px-3 py-2.5 bg-white/70 dark:bg-white/10 border border-gray-200 dark:border-white/10 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none input-glow"
                   />
+                  <p className="mt-1 text-xs text-gray-400">
+                    {modal === 'edit'
+                      ? 'Leave empty to keep current photo.'
+                      : 'Upload a photo file for this vehicle.'}
+                  </p>
                 </div>
 
                 <div>

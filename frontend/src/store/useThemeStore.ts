@@ -1,26 +1,49 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+export type ThemeMode = 'light' | 'dark' | 'ocean';
+
 interface ThemeState {
+  theme: ThemeMode;
   isDark: boolean;
+  setTheme: (theme: ThemeMode) => void;
+  cycleTheme: () => void;
   toggleTheme: () => void;
-  setDark: (val: boolean) => void;
+}
+
+const THEME_ORDER: ThemeMode[] = ['light', 'dark', 'ocean'];
+
+export function applyThemeToDocument(theme: ThemeMode) {
+  const root = document.documentElement;
+
+  root.classList.remove('dark', 'theme-light', 'theme-dark', 'theme-ocean');
+  root.classList.add(`theme-${theme}`);
+
+  if (theme === 'dark') {
+    root.classList.add('dark');
+  }
 }
 
 export const useThemeStore = create<ThemeState>()(
   persist(
     (set, get) => ({
+      theme: 'light',
       isDark: false,
-      toggleTheme: () => {
-        const newDark = !get().isDark;
-        set({ isDark: newDark });
-        document.documentElement.classList.toggle('dark', newDark);
+      setTheme: (theme) => {
+        set({ theme, isDark: theme === 'dark' });
+        applyThemeToDocument(theme);
       },
-      setDark: (val) => {
-        set({ isDark: val });
-        document.documentElement.classList.toggle('dark', val);
+      cycleTheme: () => {
+        const current = get().theme;
+        const currentIndex = THEME_ORDER.indexOf(current);
+        const nextTheme = THEME_ORDER[(currentIndex + 1) % THEME_ORDER.length];
+        get().setTheme(nextTheme);
+      },
+      toggleTheme: () => {
+        const nextTheme = get().theme === 'dark' ? 'light' : 'dark';
+        get().setTheme(nextTheme);
       },
     }),
-    { name: 'drive-theme' }
-  )
+    { name: 'drive-theme' },
+  ),
 );

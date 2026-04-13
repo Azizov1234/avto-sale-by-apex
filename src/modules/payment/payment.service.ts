@@ -4,10 +4,17 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PaymentStatus, Prisma, Status, UserRole } from '@prisma/client';
+import {
+  OrderStatus,
+  PaymentStatus,
+  Prisma,
+  Status,
+  UserRole,
+} from '@prisma/client';
 import { PrismaService } from 'src/core/prisma/prisma.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { QueryPaymentDto } from './dto/query-payment.dto';
+import { AdminActionLogService } from '../admin-action-log/admin-action-log.service';
 
 type AuthUser = {
   id: number;
@@ -40,7 +47,10 @@ type PaymentWithOrder = Prisma.PaymentHistoryGetPayload<{
 
 @Injectable()
 export class PaymentService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly adminActionLogService: AdminActionLogService,
+  ) {}
 
   private readonly safeUserSelect = {
     id: true,
@@ -62,6 +72,7 @@ export class PaymentService {
     const order = await this.getActiveOrderOrThrow(orderId);
 
     this.ensureOrderAccess(order.userId, currentUser);
+    this.ensurePaymentCanBeCreated(order.orderStatus);
 
     const totalPaidBefore = await this.getTotalPaid(orderId);
     if (totalPaidBefore >= order.totalPrice) {
@@ -94,6 +105,13 @@ export class PaymentService {
         payment,
         paymentStatus,
       };
+    });
+
+    await this.adminActionLogService.createLog({
+      adminId: currentUser.id,
+      action: 'CREATE_PAYMENT',
+      entity: 'ORDER',
+      entityId: orderId,
     });
 
     const totalPaidAfter = totalPaidBefore + dto.amount;
@@ -228,7 +246,7 @@ export class PaymentService {
     return payment;
   }
 
-  async remove(id: number) {
+  async remove(id: number, currentUser: AuthUser) {
     const payment = await this.getActivePaymentOrThrow(id);
 
     const result = await this.prisma.$transaction(async (tx) => {
@@ -250,6 +268,13 @@ export class PaymentService {
         orderId: payment.orderId,
         orderPaymentStatus,
       };
+    });
+
+    await this.adminActionLogService.createLog({
+      adminId: currentUser.id,
+      action: 'DELETE_PAYMENT',
+      entity: 'ORDER',
+      entityId: payment.orderId,
     });
 
     return {
@@ -286,6 +311,7 @@ export class PaymentService {
         id: true,
         userId: true,
         totalPrice: true,
+        orderStatus: true,
       },
     });
 
@@ -334,6 +360,20 @@ export class PaymentService {
     });
 
     return summary._sum.amount ?? 0;
+  }
+
+  private ensurePaymentCanBeCreated(orderStatus: OrderStatus) {
+    if (orderStatus === OrderStatus.CANCELLED) {
+      throw new BadRequestException(
+        'Cancelled order cannot accept payments',
+      );
+    }
+
+    if (orderStatus !== OrderStatus.CONFIRMED) {
+      throw new BadRequestException(
+        'Order must be confirmed by admin before payment',
+      );
+    }
   }
 
   private async syncOrderPaymentStatus(

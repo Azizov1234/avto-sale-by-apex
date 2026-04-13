@@ -18,6 +18,9 @@
 
 /* ─── CSS Custom Properties ─── */
 :root {
+  --color-primary: #4f46e5;
+  --color-secondary: #6366f1;
+  --color-accent: #f59e0b;
   --bg: #f1f5f9;
   --bg-card: rgba(255, 255, 255, 0.85);
   --bg-glass: rgba(255, 255, 255, 0.65);
@@ -31,9 +34,16 @@
   --input-placeholder: #64748b;
   --sidebar-bg: #ffffff;
   --table-row-hover: rgba(255, 255, 255, 0.5);
+  --bg-orb-1: rgba(79, 70, 229, 0.08);
+  --bg-orb-2: rgba(14, 116, 144, 0.08);
+  --bg-orb-3: rgba(245, 158, 11, 0.06);
 }
 
+html.theme-dark,
 html.dark {
+  --color-primary: #7c8dff;
+  --color-secondary: #8b9eff;
+  --color-accent: #fbbf24;
   --bg: #0f172a;
   --bg-card: rgba(30, 41, 59, 0.85);
   --bg-glass: rgba(15, 23, 42, 0.75);
@@ -48,6 +58,31 @@ html.dark {
   --sidebar-bg: #1e293b;
   --table-row-hover: rgba(255, 255, 255, 0.05);
   --color-background: #0f172a;
+  --bg-orb-1: rgba(37, 99, 235, 0.16);
+  --bg-orb-2: rgba(79, 70, 229, 0.14);
+  --bg-orb-3: rgba(14, 116, 144, 0.12);
+}
+
+html.theme-ocean {
+  --color-primary: #0f72bd;
+  --color-secondary: #0ea5e9;
+  --color-accent: #14b8a6;
+  --bg: #e8f4fb;
+  --bg-card: rgba(255, 255, 255, 0.86);
+  --bg-glass: rgba(232, 244, 251, 0.78);
+  --border-glass: rgba(15, 114, 189, 0.18);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --shadow-glass: rgba(15, 23, 42, 0.08);
+  --input-bg: rgba(255, 255, 255, 0.8);
+  --input-bg-strong: rgba(241, 245, 249, 0.95);
+  --input-border: rgba(14, 165, 233, 0.3);
+  --input-placeholder: #64748b;
+  --sidebar-bg: #f4fbff;
+  --table-row-hover: rgba(186, 230, 253, 0.35);
+  --bg-orb-1: rgba(14, 165, 233, 0.2);
+  --bg-orb-2: rgba(20, 184, 166, 0.18);
+  --bg-orb-3: rgba(59, 130, 246, 0.14);
 }
 
 /* ─── Base ─── */
@@ -56,9 +91,9 @@ html.dark {
     font-family: 'Inter', sans-serif;
     background-color: var(--bg);
     background-image:
-      radial-gradient(at 0% 0%, hsla(253, 40%, 60%, 0.06) 0, transparent 50%),
-      radial-gradient(at 100% 0%, hsla(225, 39%, 30%, 0.06) 0, transparent 50%),
-      radial-gradient(at 50% 100%, hsla(339, 49%, 30%, 0.04) 0, transparent 60%);
+      radial-gradient(at 0% 0%, var(--bg-orb-1) 0, transparent 55%),
+      radial-gradient(at 100% 0%, var(--bg-orb-2) 0, transparent 55%),
+      radial-gradient(at 50% 100%, var(--bg-orb-3) 0, transparent 65%);
     background-attachment: fixed;
     color: var(--text-primary);
     transition: background-color 0.3s ease, color 0.3s ease;

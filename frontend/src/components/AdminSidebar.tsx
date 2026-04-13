@@ -7,25 +7,33 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getAdminBasePath } from '../lib/routes';
+import type { UserRole } from '../types';
 
-function getNavItems(basePath: string) {
-  return [
+function getNavItems(basePath: string, role?: UserRole) {
+  const items = [
     { to: basePath,                   icon: LayoutDashboard, label: 'Dashboard', end: true },
     { to: `${basePath}/cars`,         icon: CarFront,        label: 'Manage Cars' },
     { to: `${basePath}/orders`,       icon: ShoppingCart,    label: 'Manage Orders' },
-    { to: `${basePath}/users`,        icon: Users,           label: 'Manage Users' },
     { to: `${basePath}/installments`, icon: CreditCard,      label: 'Installment Plans' },
     { to: `${basePath}/campaigns`,    icon: Tag,             label: 'Discount Campaigns' },
-    { to: `${basePath}/analytics`,    icon: BarChart2,       label: 'Analytics' },
-    { to: `${basePath}/logs`,         icon: ScrollText,      label: 'Action Logs' },
   ];
+
+  if (role === 'SUPERADMIN') {
+    items.push(
+      { to: `${basePath}/users`, icon: Users, label: 'Manage Users' },
+      { to: `${basePath}/analytics`, icon: BarChart2, label: 'Analytics' },
+      { to: `${basePath}/logs`, icon: ScrollText, label: 'Action Logs' },
+    );
+  }
+
+  return items;
 }
 
 function SidebarContent({ onClose }: { onClose?: () => void }) {
   const { logout, user } = useAuthStore();
   const navigate = useNavigate();
   const basePath = getAdminBasePath(user?.role);
-  const navItems = getNavItems(basePath);
+  const navItems = getNavItems(basePath, user?.role);
 
   const handleLogout = () => {
     logout();

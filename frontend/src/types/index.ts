@@ -175,6 +175,7 @@ export interface CarFormValues {
   mileage: number;
   condition: CarCondition;
   image?: string;
+  imageFile?: File | null;
   categoryId?: string;
   engine: string;
   transmission: string;

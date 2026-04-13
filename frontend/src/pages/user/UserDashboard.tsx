@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import {
   Camera,
   CheckCircle,
@@ -11,6 +12,7 @@ import {
   Truck,
   User as UserIcon,
   XCircle,
+  Search,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -99,7 +101,6 @@ function StarPicker({
 export function UserDashboard() {
   const { user, updateProfile } = useAuthStore();
   const {
-    addPayment,
     addReview,
     cars,
     fetchCars,
@@ -112,9 +113,6 @@ export function UserDashboard() {
   } = useAppStore();
   const [activeTab, setActiveTab] = useState<TabKey>('orders');
   const [isLoading, setIsLoading] = useState(true);
-  const [paymentAmounts, setPaymentAmounts] = useState<Record<string, string>>(
-    {},
-  );
 
   const [profileName, setProfileName] = useState(user?.name ?? '');
   const [profileEmail, setProfileEmail] = useState(user?.email ?? '');
@@ -238,56 +236,38 @@ export function UserDashboard() {
     }
   };
 
-  const handlePaymentChange = (orderId: string, value: string) => {
-    setPaymentAmounts((current) => ({
-      ...current,
-      [orderId]: value,
-    }));
-  };
-
-  const handlePayOrder = async (orderId: string) => {
-    const rawAmount = paymentAmounts[orderId]?.trim() ?? '';
-    const amount = Number(rawAmount);
-
-    if (!rawAmount || Number.isNaN(amount) || amount <= 0) {
-      toast.error('Please enter a valid payment amount.');
-      return;
-    }
-
-    try {
-      await addPayment(orderId, amount);
-      setPaymentAmounts((current) => ({
-        ...current,
-        [orderId]: '',
-      }));
-      toast.success('Payment recorded successfully.');
-    } catch (error: unknown) {
-      toast.error(getErrorMessage(error));
-    }
-  };
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       className="max-w-4xl mx-auto"
     >
-      <div className="glass-card p-6 mb-6 flex items-center gap-5">
-        <img
-          src={user.avatarUrl}
-          alt={user.name}
-          className="w-16 h-16 rounded-2xl object-cover border-2 border-primary/30 shadow-md"
-        />
-        <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">
-            {user.name}
-          </h1>
-          <p className="text-gray-400 text-sm">{user.email}</p>
-          <span className="inline-block mt-1 text-xs font-bold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary capitalize">
-            {user.role}
-          </span>
+      <div className="glass-card mb-6 p-6">
+        <div className="flex items-center gap-5 flex-wrap">
+          <img
+            src={user.avatarUrl}
+            alt={user.name}
+            className="w-16 h-16 rounded-2xl object-cover border-2 border-primary/30 shadow-md"
+          />
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">
+              {user.name}
+            </h1>
+            <p className="text-gray-400 text-sm">{user.email}</p>
+            <span className="inline-block mt-1 text-xs font-bold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary capitalize">
+              {user.role}
+            </span>
+          </div>
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/30 btn-hover-scale"
+          >
+            <Search size={16} />
+            Mashina sotib olish
+          </Link>
         </div>
-        <div className="hidden sm:grid grid-cols-3 gap-4 text-center">
+
+        <div className="mt-5 grid grid-cols-3 gap-4 text-center">
           {[
             { label: 'Orders', value: orders.length },
             { label: 'Reviews', value: reviews.length },
@@ -344,6 +324,13 @@ export function UserDashboard() {
                 <div className="glass-card p-10 text-center text-gray-400">
                   <Package size={40} className="mx-auto mb-3 opacity-30" />
                   <p>You have not placed any orders yet.</p>
+                  <Link
+                    to="/"
+                    className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-primary/20"
+                  >
+                    <Search size={15} />
+                    Mashina sotib olish
+                  </Link>
                 </div>
               ) : (
                 orders.map((order, index) => {
@@ -512,32 +499,18 @@ export function UserDashboard() {
                         )}
 
                         {order.status !== 'CANCELLED' && !order.isFullyPaid && (
-                          <div className="mt-4 rounded-xl border border-dashed border-primary/30 bg-primary/5 p-3">
-                            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                              <div className="flex-1">
-                                <label className="mb-1 block text-xs font-semibold text-gray-600 dark:text-gray-300">
-                                  Make a payment
-                                </label>
-                                <input
-                                  type="number"
-                                  min="0.01"
-                                  step="0.01"
-                                  value={paymentAmounts[order.id] ?? ''}
-                                  onChange={(event) =>
-                                    handlePaymentChange(order.id, event.target.value)
-                                  }
-                                  placeholder={`Up to ${remainingAmount.toFixed(2)}`}
-                                  className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none transition-all focus:border-primary/50 focus:ring-2 focus:ring-primary/15 dark:border-white/10 dark:bg-white/10 dark:text-white"
-                                />
+                          <div className="mt-4 rounded-xl border border-dashed border-primary/30 bg-primary/5 p-3 text-xs">
+                            {order.status === 'PENDING' ? (
+                              <div className="font-semibold text-amber-700 dark:text-amber-300">
+                                Order is waiting for admin confirmation. Payment starts only after
+                                confirmation.
                               </div>
-                              <button
-                                type="button"
-                                onClick={() => handlePayOrder(order.id)}
-                                className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-primary/30 btn-hover-scale"
-                              >
-                                <CreditCard size={16} /> Pay now
-                              </button>
-                            </div>
+                            ) : (
+                              <div className="font-semibold text-gray-700 dark:text-gray-300">
+                                Payments are recorded by admin manually in the dashboard.
+                                Remaining amount: ${remainingAmount.toLocaleString()}.
+                              </div>
+                            )}
                           </div>
                         )}
 
@@ -705,7 +678,7 @@ export function UserDashboard() {
                     value={field.value}
                     onChange={(event) => field.setter(event.target.value)}
                     placeholder={field.placeholder}
-                    className="w-full px-4 py-2.5 bg-white/70 dark:bg-white/10 border border-gray-200 dark:border-white/10 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none input-glow transition-all-smooth"
+                    className="input-field input-glow w-full px-4 py-2.5"
                   />
                 </div>
               ))}
@@ -731,7 +704,7 @@ export function UserDashboard() {
                 <select
                   value={reviewCarId}
                   onChange={(event) => setReviewCarId(event.target.value)}
-                  className="w-full px-4 py-2.5 bg-white/70 dark:bg-gray-800 border border-gray-200 dark:border-white/10 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none input-glow"
+                  className="input-field input-glow w-full px-4 py-2.5"
                 >
                   <option value="">-- Choose a car --</option>
                   {cars.map((car) => (
@@ -758,7 +731,7 @@ export function UserDashboard() {
                   value={reviewText}
                   onChange={(event) => setReviewText(event.target.value)}
                   placeholder="Share your experience with this vehicle..."
-                  className="w-full px-4 py-2.5 bg-white/70 dark:bg-white/10 border border-gray-200 dark:border-white/10 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none input-glow transition-all-smooth resize-none"
+                  className="input-field input-glow w-full resize-none px-4 py-2.5"
                 />
               </div>
 

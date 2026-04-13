@@ -66,7 +66,7 @@ export function Login() {
               type="tel"
               value={phone}
               onChange={(event) => setPhone(event.target.value)}
-              className="input-field input-glow block w-full pl-10 px-3 py-2.5"
+              className="input-field input-glow block w-full pl-10 pr-3 py-2.5"
               placeholder="+998901234567"
             />
           </div>
@@ -84,7 +84,7 @@ export function Login() {
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="input-field input-glow block w-full pl-10 px-3 py-2.5"
+              className="input-field input-glow block w-full pl-10 pr-3 py-2.5"
               placeholder="Enter your password"
             />
           </div>

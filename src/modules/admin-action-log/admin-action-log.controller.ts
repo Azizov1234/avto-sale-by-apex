@@ -19,7 +19,7 @@ import { AdminActionLogService } from './admin-action-log.service';
 @ApiBearerAuth()
 @Controller('admin-logs')
 @UseGuards(AuthGuard, RoleGuard)
-@Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
+@Roles(UserRole.SUPERADMIN)
 export class AdminActionLogController {
   constructor(private readonly adminActionLogService: AdminActionLogService) {}
 

@@ -102,10 +102,17 @@ export function Dashboard() {
     stats,
   } = useAppStore();
   const { user } = useAuthStore();
+  const isSuperadmin = user?.role === 'SUPERADMIN';
 
   useEffect(() => {
-    void Promise.all([fetchStats(), fetchOrders(), fetchCars()]);
-  }, [fetchCars, fetchOrders, fetchStats]);
+    const tasks: Promise<unknown>[] = [fetchOrders(), fetchCars()];
+
+    if (isSuperadmin) {
+      tasks.push(fetchStats());
+    }
+
+    void Promise.all(tasks);
+  }, [fetchCars, fetchOrders, fetchStats, isSuperadmin]);
 
   const { revenue: monthlyRevenue } = useMemo(
     () => buildMonthlyOrderSeries(orders),
@@ -147,17 +154,24 @@ export function Dashboard() {
       bg: 'bg-purple-100 dark:bg-purple-900/30',
       change: `${newCarsCount} new`,
     },
-    {
+  ];
+
+  if (isSuperadmin) {
+    statCards.push({
       label: 'Active Users',
       value: String(stats?.users ?? 0),
       icon: Users,
       color: 'text-orange-600',
       bg: 'bg-orange-100 dark:bg-orange-900/30',
       change: stats?.lastCalculated ? `updated ${stats.lastCalculated}` : 'cached summary',
-    },
-  ];
+    });
+  }
 
   const handleRefreshStats = async () => {
+    if (!isSuperadmin) {
+      return;
+    }
+
     try {
       await recalculateStats();
       toast.success('Dashboard statistics recalculated.');
@@ -181,12 +195,14 @@ export function Dashboard() {
             Here is what is happening in your marketplace right now.
           </p>
         </div>
-        <button
-          onClick={handleRefreshStats}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-primary shadow-sm shadow-primary/30 btn-hover-scale"
-        >
-          <RefreshCw size={16} /> Recalculate Stats
-        </button>
+        {isSuperadmin && (
+          <button
+            onClick={handleRefreshStats}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-primary shadow-sm shadow-primary/30 btn-hover-scale"
+          >
+            <RefreshCw size={16} /> Recalculate Stats
+          </button>
+        )}
       </motion.div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">

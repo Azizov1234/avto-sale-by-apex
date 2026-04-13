@@ -7,7 +7,7 @@ import {
 import { PrismaService } from 'src/core/prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
-import { OrderType, PaymentStatus, Status } from '@prisma/client';
+import { OrderStatus, OrderType, PaymentStatus, Status } from '@prisma/client';
 import { AdminActionLogService } from '../admin-action-log/admin-action-log.service';
 
 type AuthUser = {
@@ -196,7 +196,7 @@ export class OrderService {
     return this.serializeOrder(order);
   }
 
-  async update(id: number, dto: UpdateOrderDto) {
+  async update(id: number, dto: UpdateOrderDto, currentUser: AuthUser) {
     const order = await this.prisma.order.findFirst({
       where: {
         id,
@@ -206,14 +206,42 @@ export class OrderService {
 
     if (!order) throw new NotFoundException('Order not found');
 
-    const updateData: any = {};
-    if (dto.paymentStatus) updateData.paymentStatus = dto.paymentStatus;
-    if (dto.orderStatus) updateData.orderStatus = dto.orderStatus;
+    if (
+      dto.orderStatus === OrderStatus.DELIVERED &&
+      order.paymentStatus !== PaymentStatus.CONFIRMED
+    ) {
+      throw new BadRequestException(
+        'Order cannot be delivered until full payment is confirmed',
+      );
+    }
 
-    return this.prisma.order.update({
+    if (dto.paymentStatus === PaymentStatus.CONFIRMED) {
+      throw new BadRequestException(
+        'Use payment history entries to confirm payment status',
+      );
+    }
+
+    const updateData: any = {};
+    if (dto.paymentStatus) {
+      updateData.paymentStatus = dto.paymentStatus;
+    }
+    if (dto.orderStatus) {
+      updateData.orderStatus = dto.orderStatus;
+    }
+
+    const updatedOrder = await this.prisma.order.update({
       where: { id },
       data: updateData,
     });
+
+    await this.adminActionLogService.createLog({
+      adminId: currentUser.id,
+      action: 'UPDATE_ORDER',
+      entity: 'ORDER',
+      entityId: id,
+    });
+
+    return updatedOrder;
   }
 
   async delete(id: number, currentUser: AuthUser) {

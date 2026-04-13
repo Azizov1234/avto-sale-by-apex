@@ -107,9 +107,9 @@ export class UserController {
   }
 
   @UseGuards(AuthGuard, RoleGuard)
-  @Roles(UserRole.SUPERADMIN, UserRole.ADMIN)
+  @Roles(UserRole.SUPERADMIN)
   @ApiOperation({
-    summary: ` ${UserRole.SUPERADMIN} | ${UserRole.ADMIN}`,
+    summary: ` ${UserRole.SUPERADMIN} `,
   })
   @Patch('update/byAdmin/:id')
   async updateByAdmin(
@@ -121,9 +121,9 @@ export class UserController {
   }
 
   @UseGuards(AuthGuard, RoleGuard)
-  @Roles(UserRole.SUPERADMIN, UserRole.ADMIN)
+  @Roles(UserRole.SUPERADMIN)
   @ApiOperation({
-    summary: ` ${UserRole.SUPERADMIN} | ${UserRole.ADMIN}`,
+    summary: ` ${UserRole.SUPERADMIN} `,
   })
   @Delete('delete/byAdmin/:id')
   async delete(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
@@ -131,9 +131,9 @@ export class UserController {
   }
 
   @UseGuards(AuthGuard, RoleGuard)
-  @Roles(UserRole.SUPERADMIN, UserRole.ADMIN)
+  @Roles(UserRole.SUPERADMIN)
   @ApiOperation({
-    summary: ` ${UserRole.SUPERADMIN} | ${UserRole.ADMIN}`,
+    summary: ` ${UserRole.SUPERADMIN} `,
   })
   @Get('all/with/search')
   async getAllUsersAndSearch(@Query() query?: QuerysDto) {
@@ -141,9 +141,9 @@ export class UserController {
   }
 
   @UseGuards(AuthGuard, RoleGuard)
-  @Roles(UserRole.SUPERADMIN, UserRole.ADMIN)
+  @Roles(UserRole.SUPERADMIN)
   @ApiOperation({
-    summary: ` ${UserRole.SUPERADMIN} | ${UserRole.ADMIN}`,
+    summary: ` ${UserRole.SUPERADMIN} `,
   })
   @Get('getOne/:id')
   async getOne(@Param('id', ParseIntPipe) id: number) {

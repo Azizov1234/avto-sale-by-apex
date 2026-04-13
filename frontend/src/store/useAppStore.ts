@@ -88,7 +88,11 @@ interface AppState {
   ) => Promise<void>;
   deleteReview: (id: string) => Promise<void>;
   fetchPayments: (options?: PaymentFetchOptions) => Promise<void>;
-  addPayment: (orderId: string, amount: number) => Promise<void>;
+  addPayment: (
+    orderId: string,
+    amount: number,
+    refreshScope?: 'mine' | 'all',
+  ) => Promise<void>;
   fetchInstallmentPlans: () => Promise<void>;
   addInstallmentPlan: (payload: InstallmentPlanFormValues) => Promise<void>;
   updateInstallmentPlan: (
@@ -166,8 +170,10 @@ function buildCarFormData(payload: Partial<CarFormValues>) {
     formData.append('carConditation', CONDITION_TO_API[payload.condition]);
   }
 
-  if (payload.image !== undefined) {
-    formData.append('imageUrl', payload.image);
+  if (payload.imageFile instanceof File) {
+    formData.append('imageUrl', payload.imageFile);
+  } else if (typeof payload.image === 'string' && payload.image.trim()) {
+    formData.append('imageUrl', payload.image.trim());
   }
 
   if (payload.categoryId) {
@@ -449,16 +455,18 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ payments: items });
   },
 
-  async addPayment(orderId, amount) {
+  async addPayment(orderId, amount, refreshScope = 'mine') {
     await apiClient(`/orders/${toNumberId(orderId)}/pay`, {
       method: 'POST',
       body: JSON.stringify({ amount }),
     });
 
-    await Promise.all([
-      get().fetchPayments({ mine: true }),
-      get().fetchOrders({ mine: true }),
-    ]);
+    if (refreshScope === 'all') {
+      await Promise.all([get().fetchPayments(), get().fetchOrders()]);
+      return;
+    }
+
+    await Promise.all([get().fetchPayments({ mine: true }), get().fetchOrders({ mine: true })]);
   },
 
   async fetchInstallmentPlans() {

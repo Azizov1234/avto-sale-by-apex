@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { useLanguageStore } from '../../store/useLanguageStore';
 import type { Order } from '../../types';
@@ -9,8 +9,9 @@ import { Trash2 } from 'lucide-react';
 const statuses: Order['status'][] = ['PENDING', 'CONFIRMED', 'DELIVERED', 'CANCELLED'];
 
 export function ManageOrders() {
-  const { orders, fetchOrders, updateOrderStatus, deleteOrder } = useAppStore();
+  const { orders, fetchOrders, updateOrderStatus, deleteOrder, addPayment } = useAppStore();
   const { t } = useLanguageStore();
+  const [paymentInputs, setPaymentInputs] = useState<Record<string, string>>({});
 
   useEffect(() => {
     void fetchOrders();
@@ -33,6 +34,50 @@ export function ManageOrders() {
       } catch (error: unknown) {
         toast.error(error instanceof Error ? error.message : 'Failed to delete order.');
       }
+    }
+  };
+
+  const handlePaymentInputChange = (orderId: string, value: string) => {
+    setPaymentInputs((prev) => ({
+      ...prev,
+      [orderId]: value,
+    }));
+  };
+
+  const handleAddPayment = async (order: Order) => {
+    if (order.status === 'CANCELLED') {
+      toast.error('Cancelled orders cannot accept payment.');
+      return;
+    }
+
+    if (order.status !== 'CONFIRMED') {
+      toast.error('Payment can start only after order is confirmed.');
+      return;
+    }
+
+    const rawAmount = paymentInputs[order.id]?.trim() ?? '';
+    const amount = Number(rawAmount);
+    const remainingAmount = order.remainingAmount ?? order.price;
+
+    if (!rawAmount || Number.isNaN(amount) || amount <= 0) {
+      toast.error('Enter a valid payment amount.');
+      return;
+    }
+
+    if (amount > remainingAmount) {
+      toast.error(`Amount exceeds remaining balance: ${remainingAmount.toFixed(2)}`);
+      return;
+    }
+
+    try {
+      await addPayment(order.id, amount, 'all');
+      setPaymentInputs((prev) => ({
+        ...prev,
+        [order.id]: '',
+      }));
+      toast.success('Payment added successfully.');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to add payment.');
     }
   };
 
@@ -114,6 +159,42 @@ export function ManageOrders() {
                         <span>Remaining: ${(order.remainingAmount ?? order.price).toLocaleString()}</span>
                         <span>{order.paymentCount ?? 0} payments</span>
                       </div>
+                      {!order.isFullyPaid && (
+                        <div className="mt-3 border-t border-gray-100 pt-3 dark:border-white/10">
+                          {order.status !== 'CONFIRMED' ? (
+                            <div className="rounded-lg bg-amber-100 px-2.5 py-2 text-[11px] font-semibold text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
+                              {order.status === 'PENDING'
+                                ? 'Approve order first to start payment.'
+                                : order.status === 'CANCELLED'
+                                  ? 'Cancelled order cannot accept payment.'
+                                  : 'Payment is available after confirmation.'}
+                            </div>
+                          ) : (
+                            <div className="flex items-end gap-2">
+                              <div className="flex-1">
+                                <input
+                                  type="number"
+                                  min="0.01"
+                                  step="0.01"
+                                  value={paymentInputs[order.id] ?? ''}
+                                  onChange={(event) =>
+                                    handlePaymentInputChange(order.id, event.target.value)
+                                  }
+                                  placeholder={`Up to ${(order.remainingAmount ?? order.price).toFixed(2)}`}
+                                  className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-2 text-xs text-gray-900 outline-none transition-all focus:border-primary/50 focus:ring-2 focus:ring-primary/15 dark:border-white/10 dark:bg-white/5 dark:text-white"
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleAddPayment(order)}
+                                className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white shadow-sm shadow-primary/30"
+                              >
+                                Add payment
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4">

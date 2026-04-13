@@ -128,7 +128,7 @@ export function Register() {
               type="text"
               value={name}
               onChange={(event) => setName(event.target.value)}
-              className="input-field input-glow block w-full pl-10 px-3 py-2.5"
+              className="input-field input-glow block w-full pl-10 pr-3 py-2.5"
               placeholder="John Doe"
             />
           </div>
@@ -144,7 +144,7 @@ export function Register() {
               type="tel"
               value={phone}
               onChange={(event) => setPhone(event.target.value)}
-              className="input-field input-glow block w-full pl-10 px-3 py-2.5"
+              className="input-field input-glow block w-full pl-10 pr-3 py-2.5"
               placeholder="+998901234567"
             />
           </div>
@@ -160,7 +160,7 @@ export function Register() {
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className="input-field input-glow block w-full pl-10 px-3 py-2.5"
+              className="input-field input-glow block w-full pl-10 pr-3 py-2.5"
               placeholder="name@example.com"
             />
           </div>
@@ -176,7 +176,7 @@ export function Register() {
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="input-field input-glow block w-full pl-10 px-3 py-2.5"
+              className="input-field input-glow block w-full pl-10 pr-3 py-2.5"
               placeholder="Enter your password"
             />
           </div>

@@ -50,8 +50,8 @@ export class OrderController {
   @Patch(':id')
   @UseGuards(RoleGuard)
   @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateOrderDto) {
-    return this.orderService.update(id, dto);
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateOrderDto, @Req() req) {
+    return this.orderService.update(id, dto, req.user);
   }
 
   @Delete(':id')

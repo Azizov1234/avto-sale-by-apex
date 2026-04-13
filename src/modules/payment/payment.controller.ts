@@ -24,6 +24,8 @@ export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
 
   @Post('orders/:id/pay')
+  @UseGuards(RoleGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
   payOrder(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: CreatePaymentDto,
@@ -61,7 +63,7 @@ export class PaymentController {
   @Delete('payments/:id')
   @UseGuards(RoleGuard)
   @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.paymentService.remove(id);
+  remove(@Param('id', ParseIntPipe) id: number, @Req() req) {
+    return this.paymentService.remove(id, req.user);
   }
 }

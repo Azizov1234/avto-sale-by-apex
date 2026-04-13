@@ -11,7 +11,7 @@ import { StatsCacheService } from './stats-cache.service';
 @ApiBearerAuth()
 @Controller('stats')
 @UseGuards(AuthGuard, RoleGuard)
-@Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
+@Roles(UserRole.SUPERADMIN)
 export class StatsCacheController {
   constructor(private readonly statsCacheService: StatsCacheService) {}
 

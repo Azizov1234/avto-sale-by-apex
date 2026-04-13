@@ -17,7 +17,7 @@ import { Analytics }           from './pages/admin/Analytics';
 import { AdminActionLog }      from './pages/admin/AdminActionLog';
 import { DiscountCampaigns }   from './pages/admin/DiscountCampaigns';
 import { useAuthStore }  from './store/useAuthStore';
-import { useThemeStore } from './store/useThemeStore';
+import { applyThemeToDocument, useThemeStore } from './store/useThemeStore';
 import { getHomePath } from './lib/routes';
 import type { UserRole } from './types';
 
@@ -53,12 +53,11 @@ function FallbackRedirect() {
 }
 
 export default function App() {
-  const { isDark } = useThemeStore();
+  const { theme } = useThemeStore();
 
-  // Sync theme class on mount and when isDark changes
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', isDark);
-  }, [isDark]);
+    applyThemeToDocument(theme);
+  }, [theme]);
 
   return (
     <Routes>
@@ -93,10 +92,31 @@ export default function App() {
         <Route index                element={<Dashboard />} />
         <Route path="cars"          element={<ManageCars />} />
         <Route path="orders"        element={<ManageOrders />} />
-        <Route path="users"         element={<ManageUsers />} />
+        <Route
+          path="users"
+          element={
+            <ProtectedRoute roles={['SUPERADMIN']}>
+              <ManageUsers />
+            </ProtectedRoute>
+          }
+        />
         <Route path="installments"  element={<ManageInstallments />} />
-        <Route path="analytics"     element={<Analytics />} />
-        <Route path="logs"          element={<AdminActionLog />} />
+        <Route
+          path="analytics"
+          element={
+            <ProtectedRoute roles={['SUPERADMIN']}>
+              <Analytics />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="logs"
+          element={
+            <ProtectedRoute roles={['SUPERADMIN']}>
+              <AdminActionLog />
+            </ProtectedRoute>
+          }
+        />
         <Route path="campaigns"     element={<DiscountCampaigns />} />
       </Route>
 
