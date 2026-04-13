@@ -65,6 +65,7 @@ export function ManageOrders() {
                 <th className="px-6 py-4">{t('vehicle')}</th>
                 <th className="px-6 py-4">{t('date')}</th>
                 <th className="px-6 py-4">{t('amount')}</th>
+                <th className="px-6 py-4">Payment</th>
                 <th className="px-6 py-4">{t('status')}</th>
                 <th className="px-6 py-4 text-right">Actions</th>
               </tr>
@@ -83,6 +84,38 @@ export function ManageOrders() {
                   <td className="px-6 py-4">{order.carTitle}</td>
                   <td className="px-6 py-4">{order.date}</td>
                   <td className="px-6 py-4 font-medium text-gray-900">${order.price.toLocaleString()}</td>
+                  <td className="px-6 py-4 min-w-[220px]">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between gap-2 text-xs">
+                        <span className="font-semibold text-gray-700">
+                          ${(order.totalPaid ?? 0).toLocaleString()} / ${order.price.toLocaleString()}
+                        </span>
+                        <span
+                          className={`rounded-full px-2 py-1 font-bold ${
+                            order.isFullyPaid
+                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                              : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                          }`}
+                        >
+                          {order.isFullyPaid ? 'Paid' : `${order.paymentProgressPercent ?? 0}%`}
+                        </span>
+                      </div>
+                      <div className="h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${order.paymentProgressPercent ?? 0}%` }}
+                          transition={{ delay: idx * 0.05, duration: 0.6 }}
+                          className={`h-full rounded-full ${
+                            order.isFullyPaid ? 'bg-emerald-500' : 'bg-primary'
+                          }`}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] text-gray-400">
+                        <span>Remaining: ${(order.remainingAmount ?? order.price).toLocaleString()}</span>
+                        <span>{order.paymentCount ?? 0} payments</span>
+                      </div>
+                    </div>
+                  </td>
                   <td className="px-6 py-4">
                     <select
                       value={order.status}

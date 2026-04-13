@@ -286,6 +286,26 @@ export function mapPayment(raw: ApiRecord): PaymentHistory {
   const order = asRecord(raw.order);
   const car = asRecord(order.car);
   const user = asRecord(order.user);
+  const orderPrice =
+    order.totalPrice !== undefined
+      ? asNumber(order.totalPrice)
+      : raw.orderPrice !== undefined
+        ? asNumber(raw.orderPrice)
+        : undefined;
+  const totalPaidForOrder =
+    raw.totalPaidForOrder !== undefined ? asNumber(raw.totalPaidForOrder) : undefined;
+  const remainingAmount =
+    raw.remainingAmount !== undefined
+      ? asNumber(raw.remainingAmount)
+      : orderPrice !== undefined && totalPaidForOrder !== undefined
+        ? Math.max(orderPrice - totalPaidForOrder, 0)
+        : undefined;
+  const paymentProgressPercent =
+    raw.paymentProgressPercent !== undefined
+      ? asNumber(raw.paymentProgressPercent)
+      : orderPrice && totalPaidForOrder !== undefined
+        ? Math.min(100, Math.round((totalPaidForOrder / orderPrice) * 100))
+        : undefined;
 
   return {
     id: String(raw.id ?? ''),
@@ -295,6 +315,12 @@ export function mapPayment(raw: ApiRecord): PaymentHistory {
     status: asString(raw.status, 'active') as PaymentHistory['status'],
     orderTitle: asString(car.title) || asString(raw.orderTitle),
     userName: asString(user.name) || asString(raw.userName),
+    orderPrice,
+    totalPaidForOrder,
+    remainingAmount,
+    paymentProgressPercent,
+    orderPaymentStatus:
+      asString(raw.orderPaymentStatus) || asString(order.paymentStatus),
   };
 }
 
@@ -302,6 +328,48 @@ export function mapOrder(raw: ApiRecord): Order {
   const user = asRecord(raw.user);
   const car = asRecord(raw.car);
   const plan = asRecord(raw.plan);
+  const totalPrice = asNumber(raw.totalPrice ?? raw.price ?? raw.basePrice);
+  const monthlyPayment =
+    raw.monthlyPay !== undefined ? asNumber(raw.monthlyPay) : undefined;
+  const payments = asRecordArray(raw.payments).map(mapPayment);
+  const totalPaidFromPayments = payments.reduce(
+    (sum, payment) => sum + payment.amount,
+    0,
+  );
+  const totalPaid =
+    raw.totalPaid !== undefined ? asNumber(raw.totalPaid) : totalPaidFromPayments;
+  const remainingAmount =
+    raw.remainingAmount !== undefined
+      ? asNumber(raw.remainingAmount)
+      : Math.max(totalPrice - totalPaid, 0);
+  const paymentProgressPercent =
+    raw.paymentProgressPercent !== undefined
+      ? asNumber(raw.paymentProgressPercent)
+      : totalPrice > 0
+        ? Math.min(100, Math.round((totalPaid / totalPrice) * 100))
+        : 0;
+  const installmentMonthsTotal =
+    raw.installmentMonthsTotal !== undefined
+      ? asNumber(raw.installmentMonthsTotal)
+      : plan.months
+        ? PLAN_MONTH_MAP[asString(plan.months)] ?? undefined
+        : undefined;
+  const installmentMonthsPaid =
+    raw.installmentMonthsPaid !== undefined
+      ? asNumber(raw.installmentMonthsPaid)
+      : monthlyPayment && installmentMonthsTotal
+        ? Math.min(installmentMonthsTotal, Math.floor(totalPaid / monthlyPayment))
+        : undefined;
+  const installmentMonthsRemaining =
+    raw.installmentMonthsRemaining !== undefined
+      ? asNumber(raw.installmentMonthsRemaining)
+      : installmentMonthsTotal !== undefined && installmentMonthsPaid !== undefined
+        ? Math.max(installmentMonthsTotal - installmentMonthsPaid, 0)
+        : undefined;
+  const isFullyPaid =
+    raw.isFullyPaid !== undefined
+      ? Boolean(raw.isFullyPaid)
+      : remainingAmount === 0 || asString(raw.paymentStatus) === 'CONFIRMED';
 
   return {
     id: String(raw.id ?? ''),
@@ -310,21 +378,28 @@ export function mapOrder(raw: ApiRecord): Order {
     carId: String(raw.carId ?? car.id ?? ''),
     carTitle: asString(car.title) || asString(raw.carTitle, 'Unknown Car'),
     carImage: asString(car.imageUrl) || FALLBACK_CAR_IMAGE,
-    price: asNumber(raw.totalPrice ?? raw.price ?? raw.basePrice),
+    price: totalPrice,
     status: asString(raw.orderStatus || raw.status, 'PENDING') as Order['status'],
     paymentStatus: asString(raw.paymentStatus),
     date: formatDisplayDate(asString(raw.createdAt) || asString(raw.date)),
     orderType: asString(raw.orderType) as Order['orderType'],
     installmentPlanId: raw.planId ? String(raw.planId) : undefined,
-    installmentMonths: plan.months
-      ? PLAN_MONTH_MAP[asString(plan.months)] ?? undefined
-      : undefined,
+    installmentMonths: installmentMonthsTotal,
     installmentInterest: raw.interest !== undefined ? asNumber(raw.interest) : undefined,
-    monthlyPayment: raw.monthlyPay !== undefined ? asNumber(raw.monthlyPay) : undefined,
-    payments: asRecordArray(raw.payments).map(mapPayment),
+    monthlyPayment,
+    payments,
     basePrice: raw.basePrice !== undefined ? asNumber(raw.basePrice) : undefined,
     discount: raw.discount !== undefined ? asNumber(raw.discount) : undefined,
     interest: raw.interest !== undefined ? asNumber(raw.interest) : undefined,
+    totalPaid,
+    remainingAmount,
+    paymentProgressPercent,
+    paymentCount:
+      raw.paymentCount !== undefined ? asNumber(raw.paymentCount) : payments.length,
+    isFullyPaid,
+    installmentMonthsTotal,
+    installmentMonthsPaid,
+    installmentMonthsRemaining,
   };
 }
 

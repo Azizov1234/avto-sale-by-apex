@@ -99,6 +99,7 @@ function StarPicker({
 export function UserDashboard() {
   const { user, updateProfile } = useAuthStore();
   const {
+    addPayment,
     addReview,
     cars,
     fetchCars,
@@ -111,6 +112,9 @@ export function UserDashboard() {
   } = useAppStore();
   const [activeTab, setActiveTab] = useState<TabKey>('orders');
   const [isLoading, setIsLoading] = useState(true);
+  const [paymentAmounts, setPaymentAmounts] = useState<Record<string, string>>(
+    {},
+  );
 
   const [profileName, setProfileName] = useState(user?.name ?? '');
   const [profileEmail, setProfileEmail] = useState(user?.email ?? '');
@@ -184,7 +188,7 @@ export function UserDashboard() {
 
   const totalSpent = orders
     .filter((order) => order.status !== 'CANCELLED')
-    .reduce((sum, order) => sum + order.price, 0);
+    .reduce((sum, order) => sum + (order.totalPaid ?? 0), 0);
 
   const handleSaveProfile = async () => {
     try {
@@ -229,6 +233,34 @@ export function UserDashboard() {
       setReviewCarId('');
       setReviewRating(0);
       setReviewText('');
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error));
+    }
+  };
+
+  const handlePaymentChange = (orderId: string, value: string) => {
+    setPaymentAmounts((current) => ({
+      ...current,
+      [orderId]: value,
+    }));
+  };
+
+  const handlePayOrder = async (orderId: string) => {
+    const rawAmount = paymentAmounts[orderId]?.trim() ?? '';
+    const amount = Number(rawAmount);
+
+    if (!rawAmount || Number.isNaN(amount) || amount <= 0) {
+      toast.error('Please enter a valid payment amount.');
+      return;
+    }
+
+    try {
+      await addPayment(orderId, amount);
+      setPaymentAmounts((current) => ({
+        ...current,
+        [orderId]: '',
+      }));
+      toast.success('Payment recorded successfully.');
     } catch (error: unknown) {
       toast.error(getErrorMessage(error));
     }
@@ -317,6 +349,26 @@ export function UserDashboard() {
                 orders.map((order, index) => {
                   const statusConfig = STATUS_MAP[order.status];
                   const StatusIcon = statusConfig.icon;
+                  const paidAmount = order.totalPaid ?? 0;
+                  const remainingAmount = order.remainingAmount ?? order.price;
+                  const paymentProgress = order.paymentProgressPercent ?? 0;
+                  const paymentState = order.isFullyPaid
+                    ? {
+                        label: 'Paid in full',
+                        color:
+                          'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+                      }
+                    : paidAmount > 0
+                      ? {
+                          label: 'Partially paid',
+                          color:
+                            'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+                        }
+                      : {
+                          label: 'Payment pending',
+                          color:
+                            'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+                        };
 
                   return (
                     <motion.div
@@ -368,16 +420,159 @@ export function UserDashboard() {
                           ${order.price.toLocaleString()}
                         </span>
                       </div>
-                      {order.installmentMonths && (
-                        <div className="mt-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg px-3 py-1.5 flex items-center justify-between text-xs">
-                          <span className="text-indigo-600 dark:text-indigo-400 font-semibold">
-                            {order.installmentMonths}-month installment
-                          </span>
-                          <span className="font-bold text-indigo-700 dark:text-indigo-300">
-                            ${order.monthlyPayment?.toLocaleString()}/mo
+
+                      <div className="mt-4 rounded-2xl border border-gray-100 bg-white/60 p-4 dark:border-white/10 dark:bg-white/5">
+                        <div className="mb-3 flex items-center justify-between gap-3 flex-wrap">
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                              Payment progress
+                            </p>
+                            <p className="text-sm font-bold text-gray-900 dark:text-white">
+                              ${paidAmount.toLocaleString()} paid
+                              <span className="text-gray-400 font-medium">
+                                {' '}
+                                / ${order.price.toLocaleString()}
+                              </span>
+                            </p>
+                          </div>
+                          <span
+                            className={`rounded-full px-3 py-1 text-[11px] font-bold ${paymentState.color}`}
+                          >
+                            {paymentState.label}
                           </span>
                         </div>
-                      )}
+
+                        <div className="h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${paymentProgress}%` }}
+                            transition={{
+                              delay: 0.2 + index * 0.05,
+                              duration: 0.8,
+                              ease: 'easeOut',
+                            }}
+                            className={`h-full rounded-full ${
+                              order.isFullyPaid ? 'bg-emerald-500' : 'bg-primary'
+                            }`}
+                          />
+                        </div>
+
+                        <div className="mt-2 grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
+                          <div className="rounded-xl bg-gray-50 px-3 py-2 dark:bg-white/5">
+                            <div className="text-gray-400">Paid</div>
+                            <div className="mt-1 font-semibold text-gray-900 dark:text-white">
+                              ${paidAmount.toLocaleString()}
+                            </div>
+                          </div>
+                          <div className="rounded-xl bg-gray-50 px-3 py-2 dark:bg-white/5">
+                            <div className="text-gray-400">Remaining</div>
+                            <div className="mt-1 font-semibold text-gray-900 dark:text-white">
+                              ${remainingAmount.toLocaleString()}
+                            </div>
+                          </div>
+                          <div className="rounded-xl bg-gray-50 px-3 py-2 dark:bg-white/5">
+                            <div className="text-gray-400">Progress</div>
+                            <div className="mt-1 font-semibold text-gray-900 dark:text-white">
+                              {paymentProgress}%
+                            </div>
+                          </div>
+                          <div className="rounded-xl bg-gray-50 px-3 py-2 dark:bg-white/5">
+                            <div className="text-gray-400">Payments</div>
+                            <div className="mt-1 font-semibold text-gray-900 dark:text-white">
+                              {order.paymentCount ?? order.payments?.length ?? 0}
+                            </div>
+                          </div>
+                        </div>
+
+                        {order.installmentMonths && (
+                          <div className="mt-3 rounded-xl bg-indigo-50 px-3 py-3 dark:bg-indigo-900/20">
+                            <div className="flex items-center justify-between gap-3 text-xs flex-wrap">
+                              <span className="font-semibold text-indigo-700 dark:text-indigo-300">
+                                {order.installmentMonths}-month installment
+                              </span>
+                              <span className="font-bold text-indigo-800 dark:text-indigo-200">
+                                ${order.monthlyPayment?.toLocaleString()}/mo
+                              </span>
+                            </div>
+                            <div className="mt-2 grid grid-cols-2 gap-3 text-xs">
+                              <div>
+                                <span className="text-indigo-500">Months paid: </span>
+                                <span className="font-semibold text-indigo-900 dark:text-indigo-100">
+                                  {order.installmentMonthsPaid ?? 0}/{order.installmentMonthsTotal ?? order.installmentMonths}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-indigo-500">Months left: </span>
+                                <span className="font-semibold text-indigo-900 dark:text-indigo-100">
+                                  {order.installmentMonthsRemaining ?? 0}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {order.status !== 'CANCELLED' && !order.isFullyPaid && (
+                          <div className="mt-4 rounded-xl border border-dashed border-primary/30 bg-primary/5 p-3">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                              <div className="flex-1">
+                                <label className="mb-1 block text-xs font-semibold text-gray-600 dark:text-gray-300">
+                                  Make a payment
+                                </label>
+                                <input
+                                  type="number"
+                                  min="0.01"
+                                  step="0.01"
+                                  value={paymentAmounts[order.id] ?? ''}
+                                  onChange={(event) =>
+                                    handlePaymentChange(order.id, event.target.value)
+                                  }
+                                  placeholder={`Up to ${remainingAmount.toFixed(2)}`}
+                                  className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none transition-all focus:border-primary/50 focus:ring-2 focus:ring-primary/15 dark:border-white/10 dark:bg-white/10 dark:text-white"
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handlePayOrder(order.id)}
+                                className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-primary/30 btn-hover-scale"
+                              >
+                                <CreditCard size={16} /> Pay now
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {order.isFullyPaid && (
+                          <div className="mt-4 rounded-xl bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300">
+                            This car has been fully paid.
+                          </div>
+                        )}
+
+                        {order.payments && order.payments.length > 0 && (
+                          <div className="mt-4">
+                            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
+                              Payment history
+                            </p>
+                            <div className="space-y-2">
+                              {order.payments.map((payment) => (
+                                <div
+                                  key={payment.id}
+                                  className="flex items-center justify-between rounded-xl bg-gray-50 px-3 py-2 text-xs dark:bg-white/5"
+                                >
+                                  <div>
+                                    <div className="font-semibold text-gray-900 dark:text-white">
+                                      ${payment.amount.toLocaleString()}
+                                    </div>
+                                    <div className="text-gray-400">{payment.paidAt}</div>
+                                  </div>
+                                  <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-bold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300">
+                                    PAID
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </motion.div>
                   );
                 })
@@ -421,8 +616,13 @@ export function UserDashboard() {
                           ${payment.amount.toLocaleString()}
                         </p>
                         <span className="text-[10px] font-bold badge badge-confirmed">
-                          PAID
+                          {payment.orderPaymentStatus === 'CONFIRMED' ? 'ORDER PAID' : 'PAID'}
                         </span>
+                        {payment.orderPrice !== undefined && (
+                          <p className="mt-1 text-[10px] text-gray-400">
+                            of ${payment.orderPrice.toLocaleString()}
+                          </p>
+                        )}
                       </div>
                     </motion.div>
                   ))}

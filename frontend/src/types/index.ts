@@ -95,6 +95,11 @@ export interface PaymentHistory {
   status: EntityStatus;
   orderTitle?: string;
   userName?: string;
+  orderPrice?: number;
+  totalPaidForOrder?: number;
+  remainingAmount?: number;
+  paymentProgressPercent?: number;
+  orderPaymentStatus?: string;
 }
 
 export interface Order {
@@ -117,6 +122,14 @@ export interface Order {
   basePrice?: number;
   discount?: number;
   interest?: number;
+  totalPaid?: number;
+  remainingAmount?: number;
+  paymentProgressPercent?: number;
+  paymentCount?: number;
+  isFullyPaid?: boolean;
+  installmentMonthsTotal?: number;
+  installmentMonthsPaid?: number;
+  installmentMonthsRemaining?: number;
 }
 
 export interface Review {

@@ -7,7 +7,7 @@ import {
 import { PrismaService } from 'src/core/prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
-import { OrderType, Status } from '@prisma/client';
+import { OrderType, PaymentStatus, Status } from '@prisma/client';
 import { AdminActionLogService } from '../admin-action-log/admin-action-log.service';
 
 type AuthUser = {
@@ -21,6 +21,58 @@ export class OrderService {
     private prisma: PrismaService,
     private readonly adminActionLogService: AdminActionLogService,
   ) {}
+
+  private readonly safeUserSelect = {
+    id: true,
+    name: true,
+    phone: true,
+    avatarUrl: true,
+    email: true,
+    role: true,
+    status: true,
+    createdAt: true,
+    updatedAt: true,
+  } as const;
+
+  private readonly activePaymentsInclude = {
+    where: {
+      status: Status.active,
+    },
+    orderBy: {
+      paidAt: 'desc' as const,
+    },
+  } as const;
+
+  private readonly orderInclude = {
+    car: {
+      include: {
+        category: true,
+      },
+    },
+    plan: true,
+    payments: this.activePaymentsInclude,
+  } as const;
+
+  private readonly adminOrderInclude = {
+    user: {
+      select: this.safeUserSelect,
+    },
+    ...this.orderInclude,
+  } as const;
+
+  private readonly orderDetailInclude = {
+    user: {
+      select: this.safeUserSelect,
+    },
+    car: {
+      include: {
+        category: true,
+        installmentPlans: true,
+      },
+    },
+    plan: true,
+    payments: this.activePaymentsInclude,
+  } as const;
 
   async create(dto: CreateOrderDto, userId: number) {
     const car = await this.prisma.car.findUnique({
@@ -78,7 +130,7 @@ export class OrderService {
       monthlyPay = totalPrice / months;
     }
 
-    return this.prisma.order.create({
+    const order = await this.prisma.order.create({
       data: {
         userId,
         carId: car.id,
@@ -92,54 +144,40 @@ export class OrderService {
         monthlyPay,
       },
     });
+
+    const createdOrder = await this.prisma.order.findUniqueOrThrow({
+      where: { id: order.id },
+      include: this.orderInclude,
+    });
+
+    return this.serializeOrder(createdOrder);
   }
 
   async findAll() {
-    return this.prisma.order.findMany({
+    const orders = await this.prisma.order.findMany({
       where: {
         status: Status.active,
       },
-      include: {
-        user: true,
-        car: {
-          include: { category: true },
-        },
-        plan: true,
-        payments: {
-          where: {
-            status: Status.active,
-          },
-          orderBy: {
-            paidAt: 'desc',
-          },
-        },
-      },
+      include: this.adminOrderInclude,
       orderBy: { createdAt: 'desc' },
     });
+
+    return orders.map((order) => this.serializeOrder(order));
   }
 
   async findMyOrders(userId: number) {
-    return this.prisma.order.findMany({
+    const orders = await this.prisma.order.findMany({
       where: {
         userId,
         status: Status.active,
       },
-      include: {
-        car: true,
-        plan: true,
-        payments: {
-          where: {
-            status: Status.active,
-          },
-          orderBy: {
-            paidAt: 'desc',
-          },
-        },
-      },
+      include: this.orderInclude,
       orderBy: {
         createdAt: 'desc',
       },
     });
+
+    return orders.map((order) => this.serializeOrder(order));
   }
 
   async findOne(id: number, currentUser: AuthUser) {
@@ -148,31 +186,14 @@ export class OrderService {
         id,
         status: Status.active,
       },
-      include: {
-        user: true,
-        car: {
-          include: {
-            category: true,
-            installmentPlans: true,
-          },
-        },
-        plan: true,
-        payments: {
-          where: {
-            status: Status.active,
-          },
-          orderBy: {
-            paidAt: 'desc',
-          },
-        },
-      },
+      include: this.orderDetailInclude,
     });
 
     if (!order) throw new NotFoundException('Order not found');
 
     this.ensureOrderAccess(order.userId, currentUser);
 
-    return order;
+    return this.serializeOrder(order);
   }
 
   async update(id: number, dto: UpdateOrderDto) {
@@ -230,6 +251,56 @@ export class OrderService {
     };
 
     return map[months] ?? 1;
+  }
+
+  private serializeOrder(order: {
+    totalPrice: number;
+    paymentStatus: PaymentStatus;
+    orderType: OrderType;
+    monthlyPay: number | null;
+    plan: { months: string } | null;
+    payments: Array<{ amount: number }>;
+    [key: string]: unknown;
+  }) {
+    const totalPaid = order.payments.reduce(
+      (sum, payment) => sum + payment.amount,
+      0,
+    );
+    const remainingAmount = Math.max(order.totalPrice - totalPaid, 0);
+    const paymentProgressPercent =
+      order.totalPrice > 0
+        ? Math.min(100, Math.round((totalPaid / order.totalPrice) * 100))
+        : 0;
+
+    const installmentMonthsTotal =
+      order.orderType === OrderType.INSTALLMENT && order.plan
+        ? this.mapMonths(order.plan.months)
+        : null;
+    const installmentMonthsPaid =
+      installmentMonthsTotal && order.monthlyPay && order.monthlyPay > 0
+        ? Math.min(
+            installmentMonthsTotal,
+            Math.floor(totalPaid / order.monthlyPay),
+          )
+        : 0;
+    const installmentMonthsRemaining =
+      installmentMonthsTotal !== null
+        ? Math.max(installmentMonthsTotal - installmentMonthsPaid, 0)
+        : null;
+    const isFullyPaid =
+      order.paymentStatus === PaymentStatus.CONFIRMED || remainingAmount === 0;
+
+    return {
+      ...order,
+      totalPaid,
+      remainingAmount,
+      paymentProgressPercent,
+      paymentCount: order.payments.length,
+      isFullyPaid,
+      installmentMonthsTotal,
+      installmentMonthsPaid,
+      installmentMonthsRemaining,
+    };
   }
 
   private ensureOrderAccess(ownerId: number, currentUser: AuthUser) {

@@ -42,6 +42,18 @@ type PaymentWithOrder = Prisma.PaymentHistoryGetPayload<{
 export class PaymentService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private readonly safeUserSelect = {
+    id: true,
+    name: true,
+    phone: true,
+    email: true,
+    avatarUrl: true,
+    role: true,
+    status: true,
+    createdAt: true,
+    updatedAt: true,
+  } as const;
+
   async payOrder(
     orderId: number,
     dto: CreatePaymentDto,
@@ -54,6 +66,13 @@ export class PaymentService {
     const totalPaidBefore = await this.getTotalPaid(orderId);
     if (totalPaidBefore >= order.totalPrice) {
       throw new BadRequestException('Order is already fully paid');
+    }
+
+    const remainingBeforePayment = order.totalPrice - totalPaidBefore;
+    if (dto.amount > remainingBeforePayment) {
+      throw new BadRequestException(
+        `Payment exceeds remaining balance of ${remainingBeforePayment.toFixed(2)}`,
+      );
     }
 
     const result = await this.prisma.$transaction(async (tx) => {
@@ -77,10 +96,20 @@ export class PaymentService {
       };
     });
 
+    const totalPaidAfter = totalPaidBefore + dto.amount;
+    const remainingAmount = Math.max(order.totalPrice - totalPaidAfter, 0);
+    const paymentProgressPercent =
+      order.totalPrice > 0
+        ? Math.min(100, Math.round((totalPaidAfter / order.totalPrice) * 100))
+        : 0;
+
     return {
       message: 'Payment successful',
       orderId,
       orderPaymentStatus: result.paymentStatus,
+      totalPaid: totalPaidAfter,
+      remainingAmount,
+      paymentProgressPercent,
       data: result.payment,
     };
   }
@@ -233,11 +262,7 @@ export class PaymentService {
     order: {
       include: {
         user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
+          select: this.safeUserSelect,
         },
         car: {
           select: {

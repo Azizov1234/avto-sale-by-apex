@@ -42,8 +42,6 @@ export class CarsCategoryController {
 
     @Query() query?: QueryCategoryDto,
   ) {
-    console.log(req['user']);
-
     return this.service.findAll(req['user'].role, query);
   }
 
