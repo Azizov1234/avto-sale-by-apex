@@ -1,9 +1,35 @@
-const DEFAULT_API_URL =
-  typeof window === 'undefined'
-    ? 'http://localhost:3001'
-    : `${window.location.protocol}//${window.location.hostname}:3001`;
+function removeTrailingSlash(value: string) {
+  return value.replace(/\/+$/, '');
+}
 
-const BASE_URL = import.meta.env.VITE_API_URL || DEFAULT_API_URL;
+function isLocalHostname(hostname: string) {
+  return hostname === 'localhost' || hostname === '127.0.0.1';
+}
+
+function getBaseUrls() {
+  const configuredUrl = import.meta.env.VITE_API_URL?.trim();
+
+  if (configuredUrl) {
+    return [removeTrailingSlash(configuredUrl)];
+  }
+
+  if (typeof window === 'undefined') {
+    return ['http://localhost:3001'];
+  }
+
+  const sameOrigin = removeTrailingSlash(window.location.origin);
+  const directApi = removeTrailingSlash(
+    `${window.location.protocol}//${window.location.hostname}:3001`,
+  );
+
+  if (isLocalHostname(window.location.hostname)) {
+    return [directApi];
+  }
+
+  return Array.from(new Set([sameOrigin, directApi]));
+}
+
+const BASE_URLS = getBaseUrls();
 
 const GENERIC_ERROR_PATTERNS = [
   'bad request',
@@ -119,14 +145,33 @@ export async function apiClient<T = unknown>(
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  let response: Response;
+  let response: Response | null = null;
 
-  try {
-    response = await fetch(`${BASE_URL}${endpoint}`, {
-      ...options,
-      headers,
-    });
-  } catch {
+  for (const baseUrl of BASE_URLS) {
+    try {
+      const nextResponse = await fetch(`${baseUrl}${endpoint}`, {
+        ...options,
+        headers,
+      });
+
+      const contentType = nextResponse.headers.get('content-type') || '';
+      const shouldTryNext =
+        BASE_URLS.length > 1 &&
+        nextResponse.status === 404 &&
+        contentType.includes('text/html');
+
+      if (shouldTryNext) {
+        continue;
+      }
+
+      response = nextResponse;
+      break;
+    } catch {
+      continue;
+    }
+  }
+
+  if (!response) {
     throw new Error("Server bilan bog'lanib bo'lmadi. API manzilini tekshiring.");
   }
 
