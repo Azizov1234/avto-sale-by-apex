@@ -6,6 +6,11 @@ function isLocalHostname(hostname: string) {
   return hostname === 'localhost' || hostname === '127.0.0.1';
 }
 
+function isHtmlResponse(response: Response) {
+  const contentType = response.headers.get('content-type') || '';
+  return contentType.includes('text/html');
+}
+
 function getBaseUrls() {
   const configuredUrl = import.meta.env.VITE_API_URL?.trim();
 
@@ -147,18 +152,16 @@ export async function apiClient<T = unknown>(
 
   let response: Response | null = null;
 
-  for (const baseUrl of BASE_URLS) {
+  for (const [index, baseUrl] of BASE_URLS.entries()) {
     try {
       const nextResponse = await fetch(`${baseUrl}${endpoint}`, {
         ...options,
         headers,
       });
 
-      const contentType = nextResponse.headers.get('content-type') || '';
+      // Static hosts often return HTML error pages for API POST requests.
       const shouldTryNext =
-        BASE_URLS.length > 1 &&
-        nextResponse.status === 404 &&
-        contentType.includes('text/html');
+        index < BASE_URLS.length - 1 && isHtmlResponse(nextResponse);
 
       if (shouldTryNext) {
         continue;
